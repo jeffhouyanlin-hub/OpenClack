@@ -29,3 +29,14 @@
   - Renderer process (React app with basic welcome screen)
   - Build configurations (tsconfig, vite.config, package.json)
 - Ready for feature implementation in subsequent sessions
+
+### Session 1 — feat-001: Set up Electron main process with proper window management
+- Implemented comprehensive BrowserWindow configuration with proper dimensions (900x700, min 600x500)
+- Added security settings (nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true)
+- Implemented all window lifecycle event handlers (closed, minimize, maximize, unmaximize, restore, focus, blur, ready-to-show)
+- Configured app-level event handlers (window-all-closed, activate, before-quit)
+- Added ready-to-show event to prevent visual flash during window creation
+- Created comprehensive test suite (6 tests) verifying all configuration and event handlers
+- Current test status: 7/7 passing (6 new tests for feat-001 + 1 existing renderer test)
+- Main process compiles successfully with TypeScript
+- Notes: Electron main process testing uses source code verification approach rather than runtime mocking to avoid Electron initialization issues in test environment

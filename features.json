@@ -12,7 +12,7 @@
         "Set up development and production URL loading",
         "Configure app-level event handlers (ready, activate, window-all-closed)"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {
