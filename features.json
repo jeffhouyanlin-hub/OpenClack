@@ -116,7 +116,7 @@
         "Implement scrollable log output area",
         "Add current step indicator (e.g., 'Installing Node.js...')"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {
