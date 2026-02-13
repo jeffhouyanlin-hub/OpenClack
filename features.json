@@ -181,7 +181,7 @@
         "Compare version against minimum requirement (22.12)",
         "Return detection result with current version info"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {

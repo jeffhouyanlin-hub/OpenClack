@@ -277,3 +277,25 @@
 - Build process completes successfully
 - Notes for future sessions: SettingsScreen is fully implemented and tested. The component is ready to be integrated into the navigation state machine in feat-012. API key validation is strict but allows empty values since configuration is optional. The component follows the same visual design language as WelcomeScreen with consistent gradient backgrounds and card-based layouts. Future sessions should integrate this screen into the app flow and connect it to the IPC saveConfig handler to persist API keys to OpenClaw's configuration.
 
+
+### Session 9 — feat-014: Implement Node.js version detection
+- Created installer utility module (src/main/utils/installer.ts) with comprehensive Node.js detection functionality:
+  - parseNodeVersion(): Parses version strings (with/without 'v' prefix, handles whitespace and metadata)
+  - compareVersions(): Semantic version comparison (major.minor.patch)
+  - detectNodeVersion(): Executes 'node --version' via spawn and returns detailed result
+  - MIN_NODE_VERSION constant set to '22.12.0'
+- Implemented NodeVersionResult interface with installed/version/meetsRequirement/error fields
+- Used child_process.spawn (not shell) for secure command execution
+- Handles all edge cases:
+  - Node.js not installed (spawn ENOENT error)
+  - Command execution failure (non-zero exit code)
+  - Invalid version format returned by node
+  - Multiple data chunks from stdout stream
+  - Version comparison for all major/minor/patch combinations
+- Created comprehensive test suite (src/main/utils/installer.test.ts) with 26 tests covering:
+  - parseNodeVersion: 6 tests (valid formats, invalid formats, whitespace, metadata)
+  - compareVersions: 9 tests (equal, higher/lower major/minor/patch, invalid formats)
+  - detectNodeVersion: 11 tests (installed and meets requirement, installed but doesn't meet, not installed, errors, data streaming)
+- Current test status: 246/246 passing (220 previous + 26 new for feat-014)
+- All TypeScript compilation passes for both main and renderer
+- Notes for future sessions: Node.js version detection is complete and ready to be integrated into the installation orchestrator (feat-023). The detectNodeVersion() function can be called from IPC handlers to check Node.js status before installation begins. Future features (feat-015, feat-016, feat-017) will use this detection to determine if Node.js installation is needed.
