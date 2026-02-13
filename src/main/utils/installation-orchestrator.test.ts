@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { InstallationOrchestrator, InstallationPhase } from './installation-orchestrator';
+import { InstallationOrchestrator } from './installation-orchestrator';
 import type { InstallProgress, LogEntry, InstallError, InstallResult } from '../../types/ipc';
 import * as installer from './installer';
 
@@ -357,7 +357,7 @@ describe('InstallationOrchestrator', () => {
       });
 
       let completeEvent: InstallResult | null = null;
-      orchestrator.on('complete', (result) => {
+      orchestrator.on('complete', (result: InstallResult) => {
         completeEvent = result;
       });
 
@@ -365,7 +365,7 @@ describe('InstallationOrchestrator', () => {
 
       expect(result.success).toBe(true);
       expect(completeEvent).not.toBeNull();
-      expect(completeEvent?.success).toBe(true);
+      expect(completeEvent!.success).toBe(true);
     });
 
     it('should return success result from start()', async () => {
@@ -474,16 +474,16 @@ describe('InstallationOrchestrator', () => {
       vi.mocked(installer.detectNodeVersion).mockRejectedValue(new Error('Test error'));
 
       let errorEvent: InstallError | null = null;
-      orchestrator.on('error', (error) => {
+      orchestrator.on('error', (error: InstallError) => {
         errorEvent = error;
       });
 
       await orchestrator.start();
 
       expect(errorEvent).not.toBeNull();
-      expect(errorEvent?.phase).toBeDefined();
+      expect(errorEvent!.phase).toBeDefined();
       expect(['detecting', 'installing-node', 'installing-openclaw', 'onboarding', 'configuring']).toContain(
-        errorEvent?.phase
+        errorEvent!.phase
       );
     });
 
@@ -494,13 +494,13 @@ describe('InstallationOrchestrator', () => {
       vi.mocked(installer.detectNodeVersion).mockRejectedValue(new Error('Recoverable error'));
 
       let errorEvent: InstallError | null = null;
-      orchestrator.on('error', (error) => {
+      orchestrator.on('error', (error: InstallError) => {
         errorEvent = error;
       });
 
       await orchestrator.start();
 
-      expect(errorEvent?.recoverable).toBe(true);
+      expect(errorEvent!.recoverable).toBe(true);
     });
 
     it('should include stack trace in error', async () => {

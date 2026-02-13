@@ -129,7 +129,7 @@
         "Add 'Close' secondary button",
         "Display installation summary (what was installed)"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {

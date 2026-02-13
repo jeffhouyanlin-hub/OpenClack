@@ -37,3 +37,8 @@ Features: 11/90 passing
 Status: success
 Duration: 1959s
 Features: 12/90 passing
+
+--- Session 8 [2026-02-13T04:23:55Z] ---
+Status: error (exit 137)
+Duration: 572s
+Features: 13/90 passing
