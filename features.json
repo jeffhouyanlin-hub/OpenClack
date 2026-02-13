@@ -25,7 +25,7 @@
         "Implement secure IPC handlers in main process",
         "Expose safe API to renderer through contextBridge"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {

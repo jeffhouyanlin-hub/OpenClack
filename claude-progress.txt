@@ -40,3 +40,30 @@
 - Current test status: 7/7 passing (6 new tests for feat-001 + 1 existing renderer test)
 - Main process compiles successfully with TypeScript
 - Notes: Electron main process testing uses source code verification approach rather than runtime mocking to avoid Electron initialization issues in test environment
+
+### Session 2 — feat-002: Set up IPC communication between main and renderer processes
+- Created comprehensive TypeScript type definitions for all IPC channels and data structures (src/types/ipc.ts)
+  - Defined InstallConfig, InstallProgress, LogEntry, InstallError, InstallResult, SystemInfo types
+  - Created IPC_CHANNELS constant object with all channel names for type safety
+  - Defined WindowAPI interface for the exposed renderer API
+  - Added global Window interface extension for TypeScript autocomplete
+- Implemented secure IPC handlers in main process (src/main/ipc-handlers.ts)
+  - Created registerIPCHandlers() to set up all 5 handlers (START_INSTALL, CANCEL_INSTALL, GET_SYSTEM_INFO, LAUNCH_OPENCLAW, SAVE_CONFIG)
+  - Implemented validation logic for InstallConfig to prevent invalid data
+  - Added helper functions for sending events to renderer (sendInstallProgress, sendInstallLog, sendInstallError, sendInstallComplete)
+  - Included proper window destruction checks to prevent crashes
+  - Created unregisterIPCHandlers() for cleanup
+- Updated preload script with full contextBridge API implementation (src/main/preload.ts)
+  - Exposed all 5 invoke methods: startInstall, cancelInstall, getSystemInfo, launchOpenclaw, saveConfig
+  - Exposed all 4 event listeners: onInstallProgress, onInstallLog, onInstallError, onInstallComplete
+  - Each event listener returns a cleanup function to remove the listener
+  - Used typed interfaces from src/types/ipc.ts for full type safety
+- Integrated IPC handlers into main process lifecycle (src/main/main.ts)
+  - Registered handlers after window creation
+  - Unregistered handlers on app before-quit event
+- Created comprehensive test suites:
+  - ipc-handlers.test.ts: 17 tests covering all handlers, validation, and sender functions
+  - preload.test.ts: 20 tests verifying API exposure and channel mapping
+- Current test status: 44/44 passing (1 renderer + 6 main + 20 preload + 17 IPC handlers)
+- All TypeScript compiles successfully
+- Notes for future sessions: IPC foundation is now in place. Future features can use window.electronAPI from renderer to communicate with main process. All channels are type-safe and validated.

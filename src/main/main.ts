@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
+import { registerIPCHandlers, unregisterIPCHandlers } from './ipc-handlers';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -64,6 +65,9 @@ function createWindow() {
   mainWindow.on('blur', () => {
     // Window lost focus
   });
+
+  // Register IPC handlers
+  registerIPCHandlers(mainWindow);
 }
 
 // App lifecycle event handlers
@@ -85,7 +89,8 @@ app.on('activate', () => {
 
 // Handle app before-quit event
 app.on('before-quit', () => {
-  // Cleanup before quitting
+  // Cleanup IPC handlers
+  unregisterIPCHandlers();
 });
 
 // Export for testing
