@@ -455,3 +455,27 @@
 - All TypeScript compilation passes for both main and renderer
 - Build process completes successfully
 - Notes for future sessions: SuccessScreen is fully implemented and tested. The component is ready to be integrated into the navigation state machine in feat-012. It accepts an InstallationSummary object with optional fields (nodeVersion, openclawVersion, configuredApis) and two callback handlers (onLaunch, onClose). The component follows the established design patterns and provides a clear completion state for the installation flow. The Launch button will be connected to feat-026 (OpenClaw launcher functionality) and the Close button will terminate the installer application.
+
+### Session 11 — feat-011: Create error screen with retry capability
+- Implemented ErrorScreen component with comprehensive error display
+- Added collapsible stack trace section with toggle button (initially hidden)
+- Implemented collapsible full logs viewer showing all installation log entries
+- Added Retry Installation button that calls onRetry callback
+- Created error icon with red gradient matching OpenClaw branding
+- Displayed error message, optional error code, and error details prominently
+- Styled with responsive design matching existing screen patterns
+- Applied proper log level styling (info, warning, error) in log entries
+- Added timestamp formatting for log entries
+- Implemented 36 comprehensive tests covering:
+  - Basic rendering of all UI elements
+  - Stack trace expand/collapse functionality
+  - Logs expand/collapse functionality
+  - Retry button click handler
+  - Accessibility attributes (ARIA labels, expanded states)
+  - Edge cases (long errors, large logs, minimal error objects)
+  - Log level CSS classes
+  - Empty logs handling
+- Current test status: 402/402 passing (36 new tests for feat-011)
+- All previously passing tests still pass
+- Features.json updated: feat-011 marked as passing
+- No issues encountered, implementation complete
