@@ -1,0 +1,1176 @@
+{
+  "project": "OpenClack",
+  "goal": "Build an Electron GUI app called OpenClack — a silent installer for OpenClaw (https://openclaw.ai). Tech: Electron + TypeScript + React. Platforms: macOS, Windows, Linux. Flow: 1. App launches, shows a clean branded UI with OpenClack logo/name. 2. User clicks Install which triggers OS permission prompt (sudo on macOS/Linux, UAC on Windows). 3. User can optionally enter API keys (Anthropic, OpenAI, etc.) in a settings form before or after install. 4. App silently handles ALL installation steps in the background: Check/install Node.js >= 22.12 if missing, Run npm install -g openclaw@latest, Run openclaw onboard --install-daemon (non-interactive, pass config), Write API keys to OpenClaw config if provided. 5. Show real-time progress bar and log output during install. 6. On completion, show success screen with Launch OpenClaw button. 7. Handle errors gracefully with retry option. The app should be packageable as .dmg (macOS), .exe/.msi (Windows), .AppImage/.deb (Linux) using electron-builder.",
+  "features": [
+    {
+      "id": "feat-001",
+      "category": "infrastructure",
+      "description": "Set up Electron main process with proper window management",
+      "steps": [
+        "Configure BrowserWindow with appropriate dimensions and security settings",
+        "Handle window lifecycle events (close, minimize, maximize)",
+        "Set up development and production URL loading",
+        "Configure app-level event handlers (ready, activate, window-all-closed)"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-002",
+      "category": "infrastructure",
+      "description": "Set up IPC communication between main and renderer processes",
+      "steps": [
+        "Create preload script with contextBridge API",
+        "Define TypeScript types for IPC channels",
+        "Implement secure IPC handlers in main process",
+        "Expose safe API to renderer through contextBridge"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-003",
+      "category": "infrastructure",
+      "description": "Configure TypeScript compilation for main and renderer processes",
+      "steps": [
+        "Set up separate tsconfig for main process (CommonJS)",
+        "Set up tsconfig for renderer process (ESNext)",
+        "Configure build scripts to compile both processes",
+        "Ensure proper type checking for Electron APIs"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-004",
+      "category": "infrastructure",
+      "description": "Set up Vite dev server for hot-reloading in development",
+      "steps": [
+        "Configure Vite for React with TypeScript",
+        "Set up dev server to run on specific port",
+        "Configure main process to load from dev server in development",
+        "Add concurrently script to run both main and renderer in dev mode"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-005",
+      "category": "infrastructure",
+      "description": "Configure electron-builder for cross-platform packaging",
+      "steps": [
+        "Set up electron-builder config in package.json",
+        "Configure macOS .dmg and .zip targets",
+        "Configure Windows NSIS and MSI targets",
+        "Configure Linux AppImage and deb targets"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-006",
+      "category": "infrastructure",
+      "description": "Create asset pipeline for app icons and branding",
+      "steps": [
+        "Create assets directory structure",
+        "Generate placeholder icon files (.icns, .ico, .png)",
+        "Configure icon paths in electron-builder",
+        "Set up build script to copy assets to dist"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-007",
+      "category": "ui",
+      "description": "Design and implement branded welcome screen",
+      "steps": [
+        "Create WelcomeScreen component with OpenClack branding",
+        "Add logo placeholder and app name/tagline",
+        "Implement gradient background matching OpenClaw aesthetic",
+        "Add Install button as primary CTA"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-008",
+      "category": "ui",
+      "description": "Create settings/configuration screen for API keys",
+      "steps": [
+        "Build SettingsScreen component with form inputs",
+        "Add fields for Anthropic API key, OpenAI API key, and other providers",
+        "Implement show/hide toggle for password-style inputs",
+        "Add validation for API key format"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-009",
+      "category": "ui",
+      "description": "Design installation progress screen with logs",
+      "steps": [
+        "Create InstallationScreen component",
+        "Add progress bar showing percentage complete",
+        "Implement scrollable log output area",
+        "Add current step indicator (e.g., 'Installing Node.js...')"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-010",
+      "category": "ui",
+      "description": "Create success screen with launch option",
+      "steps": [
+        "Build SuccessScreen component with celebration message",
+        "Add 'Launch OpenClaw' primary button",
+        "Add 'Close' secondary button",
+        "Display installation summary (what was installed)"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-011",
+      "category": "ui",
+      "description": "Create error screen with retry capability",
+      "steps": [
+        "Build ErrorScreen component showing error details",
+        "Display error message and stack trace in collapsible section",
+        "Add 'Retry Installation' button",
+        "Add 'View Logs' button to expand full log output"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-012",
+      "category": "ui",
+      "description": "Implement navigation state machine between screens",
+      "steps": [
+        "Create AppState type with screen enums (welcome, settings, installing, success, error)",
+        "Implement state transitions in App component",
+        "Add navigation functions (goToSettings, startInstall, etc.)",
+        "Ensure proper state flow and prevent invalid transitions"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-013",
+      "category": "ui",
+      "description": "Add responsive layout and styling system",
+      "steps": [
+        "Create CSS variables for theme colors and spacing",
+        "Implement responsive grid/flexbox layouts",
+        "Add animations for screen transitions",
+        "Ensure UI works on different window sizes"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-014",
+      "category": "core",
+      "description": "Implement Node.js version detection",
+      "steps": [
+        "Create installer utility module in main process",
+        "Execute 'node --version' command and parse output",
+        "Compare version against minimum requirement (22.12)",
+        "Return detection result with current version info"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-015",
+      "category": "core",
+      "description": "Implement Node.js installation on macOS",
+      "steps": [
+        "Detect if Homebrew is installed on macOS",
+        "If Homebrew available, use 'brew install node'",
+        "If not, download Node.js installer from nodejs.org",
+        "Execute installer with sudo privileges and track progress"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-016",
+      "category": "core",
+      "description": "Implement Node.js installation on Windows",
+      "steps": [
+        "Download Node.js MSI installer from nodejs.org",
+        "Verify installer checksum for security",
+        "Execute MSI with elevated privileges (UAC prompt)",
+        "Wait for installation to complete and verify"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-017",
+      "category": "core",
+      "description": "Implement Node.js installation on Linux",
+      "steps": [
+        "Detect Linux distribution (Ubuntu/Debian, Fedora, etc.)",
+        "Use appropriate package manager (apt, dnf, etc.)",
+        "Install Node.js with sudo privileges",
+        "Verify installation completed successfully"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-018",
+      "category": "core",
+      "description": "Implement privilege elevation for macOS/Linux",
+      "steps": [
+        "Create sudo prompt helper using AppleScript or PolicyKit",
+        "Show OS-native authentication dialog",
+        "Execute commands with elevated privileges",
+        "Handle authentication cancellation gracefully"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-019",
+      "category": "core",
+      "description": "Implement privilege elevation for Windows",
+      "steps": [
+        "Use UAC elevation through PowerShell or native APIs",
+        "Show Windows UAC prompt",
+        "Execute commands with administrator privileges",
+        "Handle UAC denial gracefully"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-020",
+      "category": "core",
+      "description": "Implement OpenClaw npm package installation",
+      "steps": [
+        "Execute 'npm install -g openclaw@latest' with privileges",
+        "Stream npm output to renderer for progress display",
+        "Parse npm output to detect errors and completion",
+        "Verify openclaw command is available after install"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-021",
+      "category": "core",
+      "description": "Implement OpenClaw daemon onboarding",
+      "steps": [
+        "Build command 'openclaw onboard --install-daemon' with config",
+        "Pass non-interactive flags to prevent prompts",
+        "Stream onboarding output to renderer",
+        "Verify daemon installation completed successfully"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-022",
+      "category": "core",
+      "description": "Implement API key configuration writing",
+      "steps": [
+        "Locate OpenClaw config file path",
+        "Read existing config or create new one",
+        "Merge API keys into config (Anthropic, OpenAI, etc.)",
+        "Write config back to disk with proper permissions"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-023",
+      "category": "core",
+      "description": "Create installation orchestration pipeline",
+      "steps": [
+        "Build InstallationOrchestrator class coordinating all steps",
+        "Define installation phases (detect, install node, install openclaw, onboard, configure)",
+        "Execute phases sequentially with error handling",
+        "Emit progress events for each phase"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-024",
+      "category": "core",
+      "description": "Implement real-time progress tracking",
+      "steps": [
+        "Create ProgressTracker to calculate percentage complete",
+        "Emit progress updates via IPC to renderer",
+        "Track current step and total steps",
+        "Provide estimated time remaining if possible"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-025",
+      "category": "core",
+      "description": "Implement log streaming from main to renderer",
+      "steps": [
+        "Create LogStreamer to capture stdout/stderr from child processes",
+        "Send log lines via IPC to renderer in real-time",
+        "Add log levels (info, warning, error)",
+        "Store full log in memory for error reporting"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-026",
+      "category": "core",
+      "description": "Create OpenClaw launcher functionality",
+      "steps": [
+        "Detect OpenClaw installation path",
+        "Build command to launch OpenClaw (openclaw start or similar)",
+        "Execute launch command when user clicks Launch button",
+        "Handle launch errors gracefully"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-027",
+      "category": "error-handling",
+      "description": "Implement comprehensive error handling for Node.js installation",
+      "steps": [
+        "Catch network errors during download",
+        "Handle permission errors during installation",
+        "Detect and report disk space issues",
+        "Provide actionable error messages to user"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-028",
+      "category": "error-handling",
+      "description": "Implement error handling for npm installation",
+      "steps": [
+        "Detect network failures during npm install",
+        "Handle npm registry errors",
+        "Catch version conflicts or dependency issues",
+        "Provide retry logic for transient failures"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-029",
+      "category": "error-handling",
+      "description": "Implement error handling for OpenClaw onboarding",
+      "steps": [
+        "Catch daemon installation failures",
+        "Handle permission issues during daemon setup",
+        "Detect configuration errors",
+        "Log detailed error information for debugging"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-030",
+      "category": "error-handling",
+      "description": "Create retry mechanism for failed installation",
+      "steps": [
+        "Store installation state to allow retry from failure point",
+        "Implement exponential backoff for network retries",
+        "Add manual retry button in error screen",
+        "Clear partial installations before retry if necessary"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-031",
+      "category": "error-handling",
+      "description": "Implement graceful degradation for unsupported platforms",
+      "steps": [
+        "Detect OS and architecture at startup",
+        "Show error message if platform not supported",
+        "Provide alternative installation instructions link",
+        "Prevent installation attempts on unsupported platforms"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-032",
+      "category": "validation",
+      "description": "Add input validation for API keys",
+      "steps": [
+        "Validate Anthropic API key format (sk-ant-...)",
+        "Validate OpenAI API key format (sk-...)",
+        "Show inline validation errors in settings form",
+        "Prevent submission of invalid keys"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-033",
+      "category": "validation",
+      "description": "Verify Node.js installation after completion",
+      "steps": [
+        "Run 'node --version' after installation",
+        "Verify version meets minimum requirement",
+        "Check npm is also available",
+        "Fail installation if verification fails"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-034",
+      "category": "validation",
+      "description": "Verify OpenClaw installation after completion",
+      "steps": [
+        "Run 'openclaw --version' after global install",
+        "Check openclaw command exists in PATH",
+        "Verify daemon is running if applicable",
+        "Report verification failure to user"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-035",
+      "category": "validation",
+      "description": "Check for existing OpenClaw installation before starting",
+      "steps": [
+        "Detect if openclaw is already installed globally",
+        "Check daemon status if installed",
+        "Offer to reinstall/upgrade if outdated",
+        "Skip installation steps if up-to-date"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-036",
+      "category": "packaging",
+      "description": "Create macOS app icon and branding assets",
+      "steps": [
+        "Design or generate OpenClack logo (1024x1024)",
+        "Create .icns file with all required sizes",
+        "Add app icons to assets directory",
+        "Configure electron-builder to use icons"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-037",
+      "category": "packaging",
+      "description": "Create Windows app icon and branding assets",
+      "steps": [
+        "Convert logo to .ico format with multiple sizes",
+        "Add Windows-specific icons to assets",
+        "Configure electron-builder for Windows icons",
+        "Test icon appearance in Windows"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-038",
+      "category": "packaging",
+      "description": "Create Linux app icon and branding assets",
+      "steps": [
+        "Export logo as .png in various sizes (256x256, 512x512)",
+        "Add Linux icon to assets directory",
+        "Configure desktop file for Linux",
+        "Ensure icon displays correctly in app launchers"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-039",
+      "category": "packaging",
+      "description": "Configure macOS DMG packaging",
+      "steps": [
+        "Set up DMG background image and layout",
+        "Configure app signing (if applicable)",
+        "Set DMG window size and icon positions",
+        "Test DMG installation flow on macOS"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-040",
+      "category": "packaging",
+      "description": "Configure Windows NSIS installer",
+      "steps": [
+        "Set up NSIS installer options and branding",
+        "Configure installation directory and shortcuts",
+        "Add uninstaller creation",
+        "Test NSIS installer on Windows"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-041",
+      "category": "packaging",
+      "description": "Configure Windows MSI installer",
+      "steps": [
+        "Set up MSI installer configuration",
+        "Configure upgrade codes for MSI",
+        "Add Windows registry entries if needed",
+        "Test MSI installer on Windows"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-042",
+      "category": "packaging",
+      "description": "Configure Linux AppImage packaging",
+      "steps": [
+        "Set up AppImage build configuration",
+        "Include all required dependencies in AppImage",
+        "Test AppImage on various Linux distributions",
+        "Ensure AppImage is executable without installation"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-043",
+      "category": "packaging",
+      "description": "Configure Linux .deb package",
+      "steps": [
+        "Set up debian package metadata",
+        "Configure dependencies in control file",
+        "Add post-install scripts if needed",
+        "Test .deb installation on Ubuntu/Debian"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-044",
+      "category": "packaging",
+      "description": "Set up code signing for macOS",
+      "steps": [
+        "Configure Apple Developer certificate",
+        "Add notarization step to build process",
+        "Set hardened runtime entitlements",
+        "Test signed app launches without Gatekeeper warnings"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-045",
+      "category": "packaging",
+      "description": "Set up code signing for Windows",
+      "steps": [
+        "Obtain or configure code signing certificate",
+        "Add signing step to electron-builder config",
+        "Test signed installer doesn't trigger SmartScreen",
+        "Verify signature with signtool"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-046",
+      "category": "testing",
+      "description": "Write unit tests for installation orchestrator",
+      "steps": [
+        "Create test suite for InstallationOrchestrator class",
+        "Mock child process execution",
+        "Test each installation phase independently",
+        "Verify error handling and progress events"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-047",
+      "category": "testing",
+      "description": "Write unit tests for Node.js version detection",
+      "steps": [
+        "Create test cases for version parsing",
+        "Test comparison logic (>= 22.12)",
+        "Mock various node --version outputs",
+        "Test error handling for missing Node.js"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-048",
+      "category": "testing",
+      "description": "Write unit tests for API key validation",
+      "steps": [
+        "Test valid Anthropic key format",
+        "Test valid OpenAI key format",
+        "Test invalid key formats return errors",
+        "Test empty/null key handling"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-049",
+      "category": "testing",
+      "description": "Write unit tests for config file operations",
+      "steps": [
+        "Test reading existing OpenClaw config",
+        "Test merging API keys into config",
+        "Test creating new config if none exists",
+        "Test error handling for permission issues"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-050",
+      "category": "testing",
+      "description": "Write integration tests for IPC communication",
+      "steps": [
+        "Test install start message from renderer to main",
+        "Test progress updates from main to renderer",
+        "Test log streaming from main to renderer",
+        "Test error events propagation"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-051",
+      "category": "testing",
+      "description": "Write UI component tests for WelcomeScreen",
+      "steps": [
+        "Test component renders correctly",
+        "Test Install button click handler",
+        "Test navigation to settings screen",
+        "Test button disabled state during installation"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-052",
+      "category": "testing",
+      "description": "Write UI component tests for SettingsScreen",
+      "steps": [
+        "Test form inputs render correctly",
+        "Test API key validation on input",
+        "Test show/hide password toggle",
+        "Test form submission"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-053",
+      "category": "testing",
+      "description": "Write UI component tests for InstallationScreen",
+      "steps": [
+        "Test progress bar updates correctly",
+        "Test log output displays in real-time",
+        "Test current step indicator updates",
+        "Test scrolling behavior of log area"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-054",
+      "category": "testing",
+      "description": "Write UI component tests for SuccessScreen",
+      "steps": [
+        "Test success message displays",
+        "Test Launch button is enabled",
+        "Test Close button functionality",
+        "Test installation summary displays correctly"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-055",
+      "category": "testing",
+      "description": "Write UI component tests for ErrorScreen",
+      "steps": [
+        "Test error message displays",
+        "Test retry button functionality",
+        "Test log expansion/collapse",
+        "Test error details are visible"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-056",
+      "category": "testing",
+      "description": "Create end-to-end test for successful installation flow",
+      "steps": [
+        "Set up e2e test with mock installation",
+        "Test full flow from welcome to success",
+        "Verify all screens transition correctly",
+        "Verify installation commands executed in order"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-057",
+      "category": "testing",
+      "description": "Create end-to-end test for installation failure and retry",
+      "steps": [
+        "Set up e2e test with mock failure",
+        "Test error screen displays on failure",
+        "Test retry button restarts installation",
+        "Verify error details are logged"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-058",
+      "category": "ux",
+      "description": "Add loading spinner during initial checks",
+      "steps": [
+        "Create LoadingSpinner component",
+        "Show spinner while checking for existing installation",
+        "Show spinner while detecting Node.js version",
+        "Add loading text describing current check"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-059",
+      "category": "ux",
+      "description": "Implement smooth screen transitions with animations",
+      "steps": [
+        "Add CSS transitions for screen changes",
+        "Implement fade-in/fade-out effects",
+        "Add slide animations for screen navigation",
+        "Ensure animations are smooth and not jarring"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-060",
+      "category": "ux",
+      "description": "Add keyboard shortcuts for common actions",
+      "steps": [
+        "Implement Enter key to start installation on welcome screen",
+        "Add Escape key to cancel/close where appropriate",
+        "Add keyboard navigation for settings form",
+        "Ensure focus management works correctly"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-061",
+      "category": "ux",
+      "description": "Implement accessibility features",
+      "steps": [
+        "Add ARIA labels to interactive elements",
+        "Ensure keyboard navigation works throughout app",
+        "Add screen reader support for progress updates",
+        "Test with accessibility tools"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-062",
+      "category": "ux",
+      "description": "Add tooltips and help text for settings",
+      "steps": [
+        "Create tooltip component",
+        "Add help icons next to API key inputs",
+        "Show tooltip explaining where to get API keys",
+        "Add link to API provider documentation"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-063",
+      "category": "ux",
+      "description": "Implement progress persistence across app restarts",
+      "steps": [
+        "Save installation progress to disk",
+        "Resume from last completed step if app crashes",
+        "Show resume option on restart",
+        "Clear progress after successful completion"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-064",
+      "category": "ux",
+      "description": "Add estimated time remaining for installation",
+      "steps": [
+        "Track time taken for each installation step",
+        "Calculate average time per step",
+        "Display estimated time remaining",
+        "Update estimate in real-time"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-065",
+      "category": "ux",
+      "description": "Implement installation cancellation",
+      "steps": [
+        "Add Cancel button during installation",
+        "Kill running child processes on cancel",
+        "Clean up partial installations",
+        "Return to welcome screen after cancel"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-066",
+      "category": "security",
+      "description": "Secure API key storage",
+      "steps": [
+        "Use OS keychain/credential manager for API keys",
+        "Encrypt API keys before writing to config",
+        "Prevent API keys from appearing in logs",
+        "Clear API keys from memory after use"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-067",
+      "category": "security",
+      "description": "Validate downloaded installers with checksums",
+      "steps": [
+        "Download checksum files from nodejs.org",
+        "Verify SHA256 hash of downloaded Node.js installer",
+        "Fail installation if checksum doesn't match",
+        "Log verification steps for transparency"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-068",
+      "category": "security",
+      "description": "Implement secure communication between processes",
+      "steps": [
+        "Use contextBridge exclusively for IPC",
+        "Disable nodeIntegration in renderer",
+        "Enable contextIsolation in all windows",
+        "Sanitize all data passed through IPC"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-069",
+      "category": "security",
+      "description": "Prevent code injection in command execution",
+      "steps": [
+        "Use spawn with array arguments instead of shell strings",
+        "Validate all user inputs before passing to commands",
+        "Avoid eval or dynamic code execution",
+        "Sanitize file paths and API keys"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-070",
+      "category": "logging",
+      "description": "Implement comprehensive logging system",
+      "steps": [
+        "Create logger utility with log levels",
+        "Write logs to file in app data directory",
+        "Implement log rotation to prevent disk filling",
+        "Add timestamp and log level to each entry"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-071",
+      "category": "logging",
+      "description": "Add log export functionality",
+      "steps": [
+        "Create Export Logs button in error screen",
+        "Package logs into zip file",
+        "Save to user-selected location",
+        "Include system info in exported logs"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-072",
+      "category": "logging",
+      "description": "Implement debug mode for verbose logging",
+      "steps": [
+        "Add command-line flag or env var for debug mode",
+        "Increase log verbosity in debug mode",
+        "Show debug logs in UI console",
+        "Include debug info in crash reports"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-073",
+      "category": "performance",
+      "description": "Optimize app startup time",
+      "steps": [
+        "Lazy load non-critical modules",
+        "Minimize main process blocking operations",
+        "Profile startup time and identify bottlenecks",
+        "Implement splash screen if startup is slow"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-074",
+      "category": "performance",
+      "description": "Optimize renderer bundle size",
+      "steps": [
+        "Configure code splitting in Vite",
+        "Remove unused dependencies",
+        "Use production builds for React",
+        "Measure and optimize bundle size"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-075",
+      "category": "performance",
+      "description": "Implement efficient log streaming",
+      "steps": [
+        "Batch log messages before sending via IPC",
+        "Implement log buffering to prevent UI freezing",
+        "Limit log history size in renderer",
+        "Use virtualized list for large log outputs"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-076",
+      "category": "platform-specific",
+      "description": "Implement macOS-specific features",
+      "steps": [
+        "Add macOS menu bar integration",
+        "Implement macOS dock icon bouncing on completion",
+        "Use macOS native notifications",
+        "Handle macOS-specific permissions"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-077",
+      "category": "platform-specific",
+      "description": "Implement Windows-specific features",
+      "steps": [
+        "Add Windows taskbar progress indicator",
+        "Use Windows native notifications",
+        "Handle Windows-specific registry operations",
+        "Support Windows Start menu shortcuts"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-078",
+      "category": "platform-specific",
+      "description": "Implement Linux-specific features",
+      "steps": [
+        "Support various Linux package managers",
+        "Handle different init systems (systemd, etc.)",
+        "Use Linux native notifications (libnotify)",
+        "Support XDG desktop integration"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-079",
+      "category": "configuration",
+      "description": "Add advanced settings panel",
+      "steps": [
+        "Create AdvancedSettings component",
+        "Add option to customize installation directory",
+        "Add option to skip Node.js installation if already present",
+        "Add option to configure OpenClaw daemon port"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-080",
+      "category": "configuration",
+      "description": "Implement configuration file for app preferences",
+      "steps": [
+        "Create app config file in user data directory",
+        "Store user preferences (theme, last used settings, etc.)",
+        "Load config on app startup",
+        "Save config on app close or settings change"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-081",
+      "category": "documentation",
+      "description": "Create user documentation",
+      "steps": [
+        "Write installation guide for each platform",
+        "Document API key setup process",
+        "Create troubleshooting guide for common issues",
+        "Add FAQ section"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-082",
+      "category": "documentation",
+      "description": "Add in-app help and documentation links",
+      "steps": [
+        "Add Help menu item linking to documentation",
+        "Create About dialog with version info",
+        "Add contextual help links in settings",
+        "Link to OpenClaw documentation"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-083",
+      "category": "updates",
+      "description": "Implement auto-update functionality",
+      "steps": [
+        "Integrate electron-updater",
+        "Check for updates on app startup",
+        "Show update notification when available",
+        "Download and install updates in background"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-084",
+      "category": "updates",
+      "description": "Add update settings and controls",
+      "steps": [
+        "Add option to disable auto-updates",
+        "Add manual Check for Updates button",
+        "Show update changelog before installing",
+        "Allow skipping specific versions"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-085",
+      "category": "analytics",
+      "description": "Implement privacy-focused telemetry",
+      "steps": [
+        "Add opt-in telemetry for installation success/failure",
+        "Track installation step durations (anonymously)",
+        "Send crash reports with user consent",
+        "Ensure no PII is collected"
+      ],
+      "passes": false,
+      "priority": 5
+    },
+    {
+      "id": "feat-086",
+      "category": "analytics",
+      "description": "Create installation success metrics dashboard",
+      "steps": [
+        "Set up backend to receive telemetry",
+        "Track success rate by platform",
+        "Identify most common failure points",
+        "Generate reports for debugging"
+      ],
+      "passes": false,
+      "priority": 5
+    },
+    {
+      "id": "feat-087",
+      "category": "ui",
+      "description": "Implement dark mode support",
+      "steps": [
+        "Create dark theme color scheme",
+        "Add theme toggle in settings",
+        "Persist theme preference",
+        "Apply theme to all screens"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-088",
+      "category": "ui",
+      "description": "Add system theme detection",
+      "steps": [
+        "Detect OS theme preference on startup",
+        "Auto-switch theme to match system",
+        "Listen for system theme changes",
+        "Allow manual override of system theme"
+      ],
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "feat-089",
+      "category": "localization",
+      "description": "Set up internationalization framework",
+      "steps": [
+        "Install i18n library (e.g., react-i18next)",
+        "Extract all UI strings to translation files",
+        "Create English translation as default",
+        "Add language selector in settings"
+      ],
+      "passes": false,
+      "priority": 5
+    },
+    {
+      "id": "feat-090",
+      "category": "localization",
+      "description": "Add translations for major languages",
+      "steps": [
+        "Create translation files for Spanish, French, German, Chinese",
+        "Translate all UI strings",
+        "Test UI with different languages",
+        "Ensure layouts work with longer translations"
+      ],
+      "passes": false,
+      "priority": 5
+    }
+  ]
+}
