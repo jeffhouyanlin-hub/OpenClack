@@ -298,7 +298,7 @@
         "Execute phases sequentially with error handling",
         "Emit progress events for each phase"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {

@@ -390,3 +390,38 @@
 - All TypeScript compilation passes for both main and renderer
 - Build process completes successfully
 - Notes for future sessions: Windows UAC elevation is now fully implemented alongside macOS and Linux support. The executeWithPrivileges() function now works on all three major platforms and can be used by feat-015 (macOS Node.js installation), feat-016 (Windows Node.js installation), feat-017 (Linux Node.js installation), and feat-020 (OpenClaw npm installation). The PowerShell-based approach uses Start-Process with -Verb RunAs which is the standard Windows method for UAC elevation. Future features should use this unified API regardless of platform.
+### Session 13 — feat-023: Create installation orchestration pipeline
+- Created comprehensive InstallationOrchestrator class in src/main/utils/installation-orchestrator.ts:
+  - Extends EventEmitter to emit progress, log, error, and complete events
+  - Defines 6 installation phases via InstallationPhase enum: DETECTING, INSTALLING_NODE, INSTALLING_OPENCLAW, ONBOARDING, CONFIGURING, COMPLETE
+  - Implements async start() method that executes all phases sequentially with error handling
+  - Supports cancellation via cancel() method which sets internal flag and returns CANCELLED result
+  - Each phase emits progress updates with percentage (0-100) and descriptive current step messages
+- Implemented phase execution methods:
+  - executeDetectionPhase(): Calls detectNodeVersion() to check if Node.js is installed and meets minimum version (22.12.0)
+  - executeNodeInstallPhase(): Checks if Node.js needs installation, skips if already meets requirements or if skipNodeInstall config flag is set (actual installation logic is placeholder for feat-015/016/017)
+  - executeOpenClawInstallPhase(): Placeholder for npm install -g openclaw@latest (to be implemented in feat-020)
+  - executeOnboardingPhase(): Placeholder for openclaw onboard --install-daemon (to be implemented in feat-021)
+  - executeConfigurationPhase(): Checks for API keys in config, placeholder for writing them to OpenClaw config file (to be implemented in feat-022)
+- Implemented event emission helpers:
+  - emitProgress(): Emits InstallProgress events with phase, percentage, currentStep, and optional message
+  - emitLog(): Emits LogEntry events with timestamp, level (info/warning/error/debug), message, and optional details
+  - emitError(): Emits InstallError events with code, message, phase, recoverable flag, and optional stack trace
+- Implemented result builders:
+  - buildSuccessResult(): Returns InstallResult with success: true and placeholder version info, emits 100% progress and complete event
+  - buildCancelledResult(): Returns InstallResult with CANCELLED error code when user cancels
+  - buildErrorResult(): Handles exceptions, logs error, emits error event, returns InstallResult with failure and stack trace
+- Created comprehensive test suite (src/main/utils/installation-orchestrator.test.ts) with 31 tests covering:
+  - Constructor: 2 tests (with config, with empty config)
+  - Installation Phases: 9 tests (detection, Node.js not installed, below minimum version, skip install, already installed, OpenClaw install, onboarding, configuration with/without API keys)
+  - Progress Events: 3 tests (correct order, 100% on completion, current step included)
+  - Log Events: 3 tests (timestamps, correct levels, descriptive messages)
+  - Completion: 2 tests (complete event emission, success result)
+  - Cancellation: 3 tests (handle cancellation, emit log, return cancelled result)
+  - Error Handling: 4 tests (detection phase errors, error events with phase info, recoverable errors, stack traces)
+  - Sequential Execution: 2 tests (phases in order, no phase skipping)
+  - Edge Cases: 3 tests (empty config, undefined API keys, empty API keys object)
+- Current test status: 338/338 passing (307 previous + 31 new for InstallationOrchestrator)
+- All TypeScript compilation passes for both main and renderer
+- Build process completes successfully
+- Notes for future sessions: InstallationOrchestrator provides the core installation pipeline framework. It coordinates all installation steps in the correct sequence and emits real-time progress/log events for UI updates. The orchestrator currently has placeholder implementations for Node.js installation (feat-015/016/017), OpenClaw npm installation (feat-020), daemon onboarding (feat-021), and API key configuration (feat-022). Future features will replace these placeholders with actual implementation logic. The IPC handler in feat-002 can now use this orchestrator to execute the full installation flow when the user clicks Install.
