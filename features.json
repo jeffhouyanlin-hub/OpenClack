@@ -38,7 +38,7 @@
         "Configure build scripts to compile both processes",
         "Ensure proper type checking for Electron APIs"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {

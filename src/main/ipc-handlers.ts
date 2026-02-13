@@ -18,7 +18,7 @@ import {
  * Register all IPC handlers
  * This should be called once when the app starts
  */
-export function registerIPCHandlers(mainWindow: BrowserWindow): void {
+export function registerIPCHandlers(_mainWindow: BrowserWindow): void {
   // Handler: Start installation
   ipcMain.handle(IPC_CHANNELS.START_INSTALL, async (_event, config: InstallConfig): Promise<InstallResult> => {
     try {

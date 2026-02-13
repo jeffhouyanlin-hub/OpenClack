@@ -3,8 +3,11 @@
   "compilerOptions": {
     "module": "CommonJS",
     "moduleResolution": "node",
+    "lib": ["ES2022"],
     "outDir": "dist/main",
-    "noEmit": false
+    "noEmit": false,
+    "types": ["node"]
   },
-  "include": ["src/main/**/*"]
+  "include": ["src/main/**/*", "src/types/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

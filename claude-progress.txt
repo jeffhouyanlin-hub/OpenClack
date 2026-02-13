@@ -67,3 +67,41 @@
 - Current test status: 44/44 passing (1 renderer + 6 main + 20 preload + 17 IPC handlers)
 - All TypeScript compiles successfully
 - Notes for future sessions: IPC foundation is now in place. Future features can use window.electronAPI from renderer to communicate with main process. All channels are type-safe and validated.
+### Session 3 — feat-003: Configure TypeScript compilation for main and renderer processes
+- Created comprehensive TypeScript configuration structure with three config files:
+  - tsconfig.json: Base configuration with strict type checking and common compiler options
+  - tsconfig.main.json: Main process configuration using CommonJS, node module resolution, outputs to dist/main
+  - tsconfig.renderer.json: Renderer process configuration using ESNext, bundler resolution, React JSX support
+- Updated base tsconfig.json with stricter compiler options:
+  - Enabled declaration, declarationMap, sourceMap for better debugging
+  - Added noUnusedLocals, noUnusedParameters, noImplicitReturns, noFallthroughCasesInSwitch for code quality
+- Enhanced tsconfig.main.json:
+  - Added explicit node types for proper Electron API type checking
+  - Included src/types/**/* for shared type definitions
+  - Added exclude for node_modules and dist directories
+- Created tsconfig.renderer.json from scratch:
+  - Configured for React with react-jsx transform
+  - Added DOM and DOM.Iterable libraries for browser APIs
+  - Included vite/client types for Vite-specific features
+  - Set noEmit: true since Vite handles bundling
+- Updated package.json scripts:
+  - Enhanced type-check script to run both type-check:main and type-check:renderer
+  - Added type-check:main: tsc -p tsconfig.main.json --noEmit
+  - Added type-check:renderer: tsc -p tsconfig.renderer.json --noEmit
+- Fixed TypeScript compilation issues:
+  - Corrected typo: forceConsistentCasingInFilenames → forceConsistentCasingInFileNames
+  - Removed unused React import from App.tsx (not needed with react-jsx transform)
+  - Prefixed unused mainWindow parameter in registerIPCHandlers with underscore
+- Created comprehensive test suite (typescript-config.test.ts) with 24 tests covering:
+  - Existence of all three tsconfig files
+  - Base config has correct strict settings
+  - Main process uses CommonJS and outputs to dist/main
+  - Renderer process uses ESNext with React JSX and DOM libraries
+  - Build scripts are properly configured
+  - Type checking scripts work correctly
+  - Electron API types are available
+- Current test status: 68/68 passing (1 renderer + 6 main + 20 preload + 17 IPC handlers + 24 TypeScript config)
+- All TypeScript compilation passes for both main and renderer processes
+- Type checking works correctly with strict settings enabled
+- Notes for future sessions: TypeScript is now properly configured with separate compilation targets for main (Node.js/Electron) and renderer (Browser/React). Use npm run type-check to verify types across both processes. The strict compiler options will help catch bugs early.
+

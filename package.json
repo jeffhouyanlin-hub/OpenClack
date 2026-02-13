@@ -18,7 +18,9 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "lint": "eslint . --ext .ts,.tsx",
-    "type-check": "tsc --noEmit"
+    "type-check": "npm run type-check:main && npm run type-check:renderer",
+    "type-check:main": "tsc -p tsconfig.main.json --noEmit",
+    "type-check:renderer": "tsc -p tsconfig.renderer.json --noEmit"
   },
   "keywords": [
     "electron",
