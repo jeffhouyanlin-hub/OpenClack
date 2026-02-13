@@ -77,7 +77,7 @@
         "Configure icon paths in electron-builder",
         "Set up build script to copy assets to dist"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {

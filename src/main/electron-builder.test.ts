@@ -60,7 +60,7 @@ describe('electron-builder configuration', () => {
     });
 
     it('should have icon path configured', () => {
-      expect(macConfig.icon).toBe('assets/icon.icns');
+      expect(macConfig.icon).toBe('assets/icons/icon.icns');
     });
 
     it('should have artifact naming configured', () => {
@@ -122,7 +122,7 @@ describe('electron-builder configuration', () => {
     });
 
     it('should have icon path configured', () => {
-      expect(winConfig.icon).toBe('assets/icon.ico');
+      expect(winConfig.icon).toBe('assets/icons/icon.ico');
     });
 
     it('should have publisher name configured', () => {
@@ -164,9 +164,9 @@ describe('electron-builder configuration', () => {
     });
 
     it('should have installer icons configured', () => {
-      expect(nsisConfig.installerIcon).toBe('assets/icon.ico');
-      expect(nsisConfig.uninstallerIcon).toBe('assets/icon.ico');
-      expect(nsisConfig.installerHeaderIcon).toBe('assets/icon.ico');
+      expect(nsisConfig.installerIcon).toBe('assets/icons/icon.ico');
+      expect(nsisConfig.uninstallerIcon).toBe('assets/icons/icon.ico');
+      expect(nsisConfig.installerHeaderIcon).toBe('assets/icons/icon.ico');
     });
   });
 
@@ -216,7 +216,7 @@ describe('electron-builder configuration', () => {
     });
 
     it('should have icon path configured', () => {
-      expect(linuxConfig.icon).toBe('assets/icon.png');
+      expect(linuxConfig.icon).toBe('assets/icons/icon.png');
     });
 
     it('should have synopsis configured', () => {

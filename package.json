@@ -11,10 +11,11 @@
     "build": "npm run build:main && npm run build:renderer",
     "build:main": "tsc -p tsconfig.main.json",
     "build:renderer": "vite build",
-    "package": "npm run build && electron-builder",
-    "package:mac": "npm run build && electron-builder --mac",
-    "package:win": "npm run build && electron-builder --win",
-    "package:linux": "npm run build && electron-builder --linux",
+    "icons": "node scripts/generate-icons.js",
+    "package": "npm run icons && npm run build && electron-builder",
+    "package:mac": "npm run icons && npm run build && electron-builder --mac",
+    "package:win": "npm run icons && npm run build && electron-builder --win",
+    "package:linux": "npm run icons && npm run build && electron-builder --linux",
     "start": "electron .",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -81,7 +82,7 @@
           "arch": ["x64", "arm64"]
         }
       ],
-      "icon": "assets/icon.icns",
+      "icon": "assets/icons/icon.icns",
       "artifactName": "${productName}-${version}-${arch}.${ext}",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
@@ -118,7 +119,7 @@
           "arch": ["x64", "ia32"]
         }
       ],
-      "icon": "assets/icon.ico",
+      "icon": "assets/icons/icon.ico",
       "artifactName": "${productName}-Setup-${version}-${arch}.${ext}",
       "publisherName": "OpenClack Team",
       "verifyUpdateCodeSignature": false
@@ -131,9 +132,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "OpenClack",
-      "installerIcon": "assets/icon.ico",
-      "uninstallerIcon": "assets/icon.ico",
-      "installerHeaderIcon": "assets/icon.ico"
+      "installerIcon": "assets/icons/icon.ico",
+      "uninstallerIcon": "assets/icons/icon.ico",
+      "installerHeaderIcon": "assets/icons/icon.ico"
     },
     "msi": {
       "oneClick": false,
@@ -154,7 +155,7 @@
         }
       ],
       "category": "Development",
-      "icon": "assets/icon.png",
+      "icon": "assets/icons/icon.png",
       "artifactName": "${productName}-${version}-${arch}.${ext}",
       "synopsis": "Silent installer for OpenClaw",
       "description": "OpenClack is a clean, user-friendly GUI installer for OpenClaw that handles all installation steps silently.",

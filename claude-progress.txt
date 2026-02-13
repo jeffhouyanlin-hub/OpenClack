@@ -170,3 +170,36 @@
   - macOS: Universal binaries (x64/arm64), DMG with custom layout, ZIP archives
   - Windows: NSIS installer (customizable), MSI installer, both x64 and ia32
   - Linux: AppImage (portable), Debian packages with dependencies and post-install hooks
+
+### Session 6 — feat-006: Create asset pipeline for app icons and branding
+- Created comprehensive asset directory structure:
+  - assets/icons/ directory for all icon files
+  - scripts/ directory for build utilities
+- Implemented icon generation script (scripts/generate-icons.js):
+  - Creates base SVG icon with "OC" branding and gradient background
+  - Generates PNG files in all required sizes for macOS (16-1024), Windows (16-256), Linux (16-512)
+  - Converts to .icns format for macOS using iconutil
+  - Creates .ico file for Windows (electron-builder handles final conversion)
+  - Generates 512x512 PNG for Linux
+  - Includes cleanup of temporary files
+- Updated electron-builder configuration with correct icon paths:
+  - macOS: assets/icons/icon.icns
+  - Windows: assets/icons/icon.ico (also configured in NSIS installer settings)
+  - Linux: assets/icons/icon.png
+- Added npm scripts for icon generation:
+  - npm run icons: Generates all icon files
+  - All package scripts (package, package:mac, package:win, package:linux) now run icon generation before build
+- Fixed electron-builder.test.ts to expect correct icon paths in assets/icons/ subdirectory
+- Created comprehensive test suite (asset-pipeline.test.ts) with 31 tests covering:
+  - Directory structure validation
+  - Icon generation script existence and structure
+  - Generated icon files validation (size checks, format checks)
+  - electron-builder configuration verification
+  - Build scripts verification
+  - Icon generation execution
+  - Asset files location validation
+- Current test status: 173/173 passing (1 renderer + 6 main + 20 preload + 17 IPC handlers + 24 TypeScript config + 20 Vite dev + 54 electron-builder + 31 asset pipeline)
+- All TypeScript compilation passes for both main and renderer
+- Build process completes successfully
+- Icon generation script runs successfully and creates all three platform icons
+- Notes for future sessions: Asset pipeline is fully operational. Icons are placeholder graphics with "OC" branding. For production, replace with professionally designed icons by updating the SVG in generate-icons.js or manually placing custom icon files in assets/icons/. The pipeline automatically runs before packaging to ensure icons are always up-to-date.
