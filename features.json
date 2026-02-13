@@ -233,7 +233,7 @@
         "Execute commands with elevated privileges",
         "Handle authentication cancellation gracefully"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {

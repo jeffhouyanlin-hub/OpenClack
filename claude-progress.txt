@@ -332,3 +332,28 @@
 - All TypeScript compilation passes for both main and renderer
 - Build process completes successfully
 - Notes for future sessions: InstallationScreen is fully implemented and tested. The component is ready to be integrated into the navigation state machine in feat-012. It accepts progress updates and log entries through props, making it ideal for real-time streaming from the main process during installation. The auto-scroll feature ensures users always see the latest log output. The component follows the same visual design language as other screens with consistent gradient backgrounds and card-based layouts.
+
+### Session 11 — feat-018: Implement privilege elevation for macOS/Linux
+- Created comprehensive privilege elevation functionality in src/main/utils/installer.ts:
+  - Added executeWithPrivileges() function that supports both macOS and Linux
+  - macOS: Uses osascript to trigger AppleScript sudo prompt with customizable message
+  - Linux: Uses pkexec for PolicyKit authentication dialog
+  - Properly escapes command arguments to prevent injection vulnerabilities
+  - Handles user cancellation gracefully (detects exit codes and error messages)
+  - Returns detailed ElevatedCommandResult with success/stdout/stderr/exitCode/error/cancelled fields
+- Implemented comprehensive error handling:
+  - Detects missing authentication tools (osascript/pkexec) with ENOENT errors
+  - Identifies cancellation via exit codes (126, 127, -128) and stderr patterns
+  - Distinguishes between authentication failures and command execution failures
+  - Provides clear error messages for unsupported platforms (Windows not supported)
+- Created comprehensive test suite (src/main/utils/privilege-elevation.test.ts) with 23 tests covering:
+  - macOS AppleScript execution (5 tests)
+  - macOS error handling (4 tests)
+  - Linux pkexec execution (4 tests)
+  - Linux error handling (3 tests)
+  - Unsupported platforms (2 tests)
+  - Edge cases (5 tests): empty args, no output, mixed stdout/stderr, exceptions, whitespace trimming
+- Current test status: 298/298 passing (275 previous + 23 new for privilege elevation)
+- All TypeScript compilation passes for both main and renderer
+- Build process completes successfully
+- Notes for future sessions: Privilege elevation is ready for macOS/Linux platforms. The executeWithPrivileges() function can be used by feat-015 (macOS Node.js installation), feat-017 (Linux Node.js installation), and feat-020 (OpenClaw npm installation). For Windows support (feat-019), a separate implementation using UAC elevation will be needed. The function properly handles all edge cases including user cancellation, missing tools, and command failures.

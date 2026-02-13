@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { platform } from 'os';
 
 /**
  * Minimum required Node.js version
@@ -135,6 +136,141 @@ export function detectNodeVersion(): Promise<NodeVersionResult> {
         version: null,
         meetsRequirement: false,
         error: err instanceof Error ? err.message : 'Unknown error',
+      });
+    }
+  });
+}
+
+/**
+ * Result of executing a command with elevated privileges
+ */
+export interface ElevatedCommandResult {
+  /** Whether the command executed successfully */
+  success: boolean;
+  /** Standard output from the command */
+  stdout: string;
+  /** Standard error from the command */
+  stderr: string;
+  /** Exit code of the command */
+  exitCode: number | null;
+  /** Error message if execution failed */
+  error?: string;
+  /** Whether the user cancelled the authentication prompt */
+  cancelled: boolean;
+}
+
+/**
+ * Executes a command with elevated privileges on macOS/Linux
+ * Uses AppleScript sudo prompt on macOS, pkexec on Linux with PolicyKit
+ *
+ * @param command - The command to execute (e.g., 'npm')
+ * @param args - Arguments for the command (e.g., ['install', '-g', 'openclaw'])
+ * @param options - Optional settings
+ * @returns Promise resolving to ElevatedCommandResult
+ */
+export function executeWithPrivileges(
+  command: string,
+  args: string[] = [],
+  options: { message?: string } = {}
+): Promise<ElevatedCommandResult> {
+  return new Promise((resolve) => {
+    const os = platform();
+
+    // Only support macOS and Linux
+    if (os !== 'darwin' && os !== 'linux') {
+      resolve({
+        success: false,
+        stdout: '',
+        stderr: '',
+        exitCode: null,
+        error: `Unsupported platform: ${os}. This function only supports macOS and Linux.`,
+        cancelled: false,
+      });
+      return;
+    }
+
+    let elevatedCommand: string;
+    let elevatedArgs: string[];
+
+    if (os === 'darwin') {
+      // macOS: Use osascript to trigger AppleScript sudo prompt
+      const message = options.message || 'OpenClack needs administrator privileges to continue.';
+      const scriptCommand = `do shell script "${command} ${args.map(arg => arg.replace(/"/g, '\\"')).join(' ')}" with administrator privileges with prompt "${message}"`;
+
+      elevatedCommand = 'osascript';
+      elevatedArgs = ['-e', scriptCommand];
+    } else {
+      // Linux: Use pkexec for PolicyKit authentication
+      elevatedCommand = 'pkexec';
+      elevatedArgs = [command, ...args];
+    }
+
+    try {
+      const child = spawn(elevatedCommand, elevatedArgs);
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      child.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      child.on('close', (code) => {
+        // Exit code 126 or 127 typically indicates authentication failure/cancellation
+        // Exit code -128 on macOS indicates user cancelled AppleScript dialog
+        const cancelled = code === 126 || code === 127 || code === -128 ||
+                         stderr.includes('User cancelled') ||
+                         stderr.includes('Authentication failed') ||
+                         stderr.includes('Request dismissed');
+
+        if (code !== 0) {
+          resolve({
+            success: false,
+            stdout: stdout.trim(),
+            stderr: stderr.trim(),
+            exitCode: code,
+            error: cancelled ? 'User cancelled authentication' : `Command failed with exit code ${code}`,
+            cancelled,
+          });
+          return;
+        }
+
+        resolve({
+          success: true,
+          stdout: stdout.trim(),
+          stderr: stderr.trim(),
+          exitCode: code,
+          cancelled: false,
+        });
+      });
+
+      child.on('error', (err) => {
+        // Check if error indicates missing pkexec or osascript
+        const isMissingTool = err.message.includes('ENOENT');
+        const toolName = os === 'darwin' ? 'osascript' : 'pkexec';
+
+        resolve({
+          success: false,
+          stdout: '',
+          stderr: '',
+          exitCode: null,
+          error: isMissingTool
+            ? `${toolName} not found. Cannot request elevated privileges.`
+            : err.message,
+          cancelled: false,
+        });
+      });
+    } catch (err) {
+      resolve({
+        success: false,
+        stdout: '',
+        stderr: '',
+        exitCode: null,
+        error: err instanceof Error ? err.message : 'Unknown error',
+        cancelled: false,
       });
     }
   });
