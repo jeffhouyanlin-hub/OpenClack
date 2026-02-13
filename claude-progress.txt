@@ -357,3 +357,36 @@
 - All TypeScript compilation passes for both main and renderer
 - Build process completes successfully
 - Notes for future sessions: Privilege elevation is ready for macOS/Linux platforms. The executeWithPrivileges() function can be used by feat-015 (macOS Node.js installation), feat-017 (Linux Node.js installation), and feat-020 (OpenClaw npm installation). For Windows support (feat-019), a separate implementation using UAC elevation will be needed. The function properly handles all edge cases including user cancellation, missing tools, and command failures.
+### Session 12 — feat-019: Implement privilege elevation for Windows
+- Implemented Windows UAC elevation functionality in src/main/utils/installer.ts:
+  - Added executeWithPrivilegesWindows() function using PowerShell Start-Process with -Verb RunAs
+  - Uses temporary files to capture stdout/stderr since Start-Process doesn't redirect output directly
+  - Properly escapes single quotes in arguments for PowerShell ('' escaping)
+  - Triggers native Windows UAC prompt when command requires administrator privileges
+  - Parses PowerShell output format (EXIT_CODE:, STDOUT:, STDERR:) to extract command results
+- Updated executeWithPrivileges() to support all three platforms (macOS, Linux, Windows):
+  - Routes win32 platform to executeWithPrivilegesWindows()
+  - Routes darwin platform to osascript AppleScript implementation
+  - Routes linux platform to pkexec implementation
+  - Returns error for unsupported platforms (freebsd, etc.)
+- Implemented comprehensive error handling for Windows:
+  - Detects UAC cancellation via exit code 1 with specific error messages
+  - Handles PowerShell.exe not found (ENOENT) errors
+  - Distinguishes between UAC denial and command execution failures
+  - Provides clear error messages for user cancellation vs. command errors
+- Created comprehensive test suite (updated src/main/utils/privilege-elevation.test.ts) with 10 new Windows tests:
+  - Successful UAC execution (1 test)
+  - PowerShell argument formatting and Start-Process usage (1 test)
+  - Single quote escaping in arguments (1 test)
+  - UAC cancellation detection (1 test)
+  - Command execution failure handling (1 test)
+  - PowerShell not found error (1 test)
+  - UAC denial handling (1 test)
+  - stdout/stderr parsing from PowerShell output (1 test)
+  - Empty arguments array (1 test)
+  - Exception handling in try-catch (1 test)
+- Removed obsolete test that expected Windows to be unsupported
+- Current test status: 307/307 passing (298 previous + 9 new Windows tests, -1 removed unsupported test + 1 updated unsupported test)
+- All TypeScript compilation passes for both main and renderer
+- Build process completes successfully
+- Notes for future sessions: Windows UAC elevation is now fully implemented alongside macOS and Linux support. The executeWithPrivileges() function now works on all three major platforms and can be used by feat-015 (macOS Node.js installation), feat-016 (Windows Node.js installation), feat-017 (Linux Node.js installation), and feat-020 (OpenClaw npm installation). The PowerShell-based approach uses Start-Process with -Verb RunAs which is the standard Windows method for UAC elevation. Future features should use this unified API regardless of platform.

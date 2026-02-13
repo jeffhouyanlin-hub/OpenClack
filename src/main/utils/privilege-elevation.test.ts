@@ -245,18 +245,152 @@ describe('executeWithPrivileges', () => {
     });
   });
 
-  describe('Unsupported platforms', () => {
-    it('should return error for Windows platform', async () => {
+  describe('Windows (win32)', () => {
+    beforeEach(() => {
       vi.mocked(os.platform).mockReturnValue('win32');
+    });
+
+    it('should execute command successfully with UAC via PowerShell', async () => {
+      const promise = executeWithPrivileges('npm', ['install', '-g', 'openclaw']);
+
+      // Simulate PowerShell output with our custom format
+      const psOutput = 'EXIT_CODE:0\nSTDOUT:Successfully installed\nSTDERR:';
+      mockChild.stdout.emit('data', Buffer.from(psOutput));
+      mockChild.emit('close', 0);
+
+      const result = await promise;
+
+      expect(result.success).toBe(true);
+      expect(result.stdout).toBe('Successfully installed');
+      expect(result.stderr).toBe('');
+      expect(result.exitCode).toBe(0);
+      expect(result.cancelled).toBe(false);
+      expect(result.error).toBeUndefined();
+    });
+
+    it('should use PowerShell with correct arguments', async () => {
+      const promise = executeWithPrivileges('npm', ['install', '-g', 'openclaw']);
+
+      mockChild.stdout.emit('data', Buffer.from('EXIT_CODE:0\nSTDOUT:\nSTDERR:'));
+      mockChild.emit('close', 0);
+      await promise;
+
+      expect(spawn).toHaveBeenCalledWith('powershell.exe', [
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-Command',
+        expect.stringContaining('Start-Process')
+      ]);
+
+      const psCommand = vi.mocked(spawn).mock.calls[0][1][4];
+      expect(psCommand).toContain("Start-Process -FilePath 'npm'");
+      expect(psCommand).toContain('-Verb RunAs');
+      expect(psCommand).toContain('-Wait');
+      expect(psCommand).toContain('-PassThru');
+    });
+
+    it('should escape single quotes in arguments for PowerShell', async () => {
+      const promise = executeWithPrivileges('echo', ["It's working"]);
+
+      mockChild.stdout.emit('data', Buffer.from('EXIT_CODE:0\nSTDOUT:\nSTDERR:'));
+      mockChild.emit('close', 0);
+      await promise;
+
+      const psCommand = vi.mocked(spawn).mock.calls[0][1][4];
+      expect(psCommand).toContain("'It''s working'");
+    });
+
+    it('should handle UAC cancellation', async () => {
+      const promise = executeWithPrivileges('npm', ['install']);
+
+      mockChild.stderr.emit('data', Buffer.from('User cancelled elevation\n'));
+      mockChild.emit('close', 1);
+
+      const result = await promise;
+
+      expect(result.success).toBe(false);
+      expect(result.cancelled).toBe(true);
+      expect(result.error).toBe('User cancelled UAC prompt');
+    });
+
+    it('should handle command execution failure', async () => {
+      const promise = executeWithPrivileges('npm', ['install']);
+
+      const psOutput = 'EXIT_CODE:2\nSTDOUT:\nSTDERR:Command failed';
+      mockChild.stdout.emit('data', Buffer.from(psOutput));
+      mockChild.emit('close', 0);
+
+      const result = await promise;
+
+      expect(result.success).toBe(false);
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toBe('Command failed');
+      expect(result.cancelled).toBe(false);
+    });
+
+    it('should handle PowerShell not found error', async () => {
+      const promise = executeWithPrivileges('npm', ['install']);
+
+      const error = new Error('spawn powershell.exe ENOENT');
+      error.message = 'spawn powershell.exe ENOENT';
+      mockChild.emit('error', error);
+
+      const result = await promise;
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('PowerShell not found');
+    });
+
+    it('should handle UAC denial', async () => {
+      const promise = executeWithPrivileges('npm', ['install']);
+
+      mockChild.stderr.emit('data', Buffer.from('Access denied\n'));
+      mockChild.emit('close', 1);
+
+      const result = await promise;
+
+      expect(result.success).toBe(false);
+      expect(result.cancelled).toBe(true);
+      expect(result.error).toBe('User cancelled UAC prompt');
+    });
+
+    it('should parse stdout/stderr from PowerShell output', async () => {
+      const promise = executeWithPrivileges('npm', ['install']);
+
+      const psOutput = 'EXIT_CODE:0\nSTDOUT:Installation successful\nLine 2\nSTDERR:Warning: deprecated package';
+      mockChild.stdout.emit('data', Buffer.from(psOutput));
+      mockChild.emit('close', 0);
+
+      const result = await promise;
+
+      expect(result.success).toBe(true);
+      expect(result.stdout).toBe('Installation successful\nLine 2');
+      expect(result.stderr).toBe('Warning: deprecated package');
+    });
+
+    it('should handle empty arguments array', async () => {
+      const promise = executeWithPrivileges('ls', []);
+
+      mockChild.stdout.emit('data', Buffer.from('EXIT_CODE:0\nSTDOUT:\nSTDERR:'));
+      mockChild.emit('close', 0);
+      await promise;
+
+      expect(spawn).toHaveBeenCalledWith('powershell.exe', expect.any(Array));
+    });
+
+    it('should handle spawn exception in try-catch', async () => {
+      vi.mocked(spawn).mockImplementation(() => {
+        throw new Error('Spawn failed');
+      });
 
       const result = await executeWithPrivileges('npm', ['install']);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Unsupported platform: win32');
-      expect(result.error).toContain('only supports macOS and Linux');
-      expect(spawn).not.toHaveBeenCalled();
+      expect(result.error).toBe('Spawn failed');
     });
+  });
 
+  describe('Unsupported platforms', () => {
     it('should return error for unknown platform', async () => {
       vi.mocked(os.platform).mockReturnValue('freebsd' as any);
 

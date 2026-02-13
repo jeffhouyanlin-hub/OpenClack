@@ -160,8 +160,137 @@ export interface ElevatedCommandResult {
 }
 
 /**
- * Executes a command with elevated privileges on macOS/Linux
- * Uses AppleScript sudo prompt on macOS, pkexec on Linux with PolicyKit
+ * Executes a command with elevated privileges on Windows using UAC
+ * Uses PowerShell's Start-Process with -Verb RunAs to trigger UAC prompt
+ *
+ * @param command - The command to execute (e.g., 'npm')
+ * @param args - Arguments for the command (e.g., ['install', '-g', 'openclaw'])
+ * @returns Promise resolving to ElevatedCommandResult
+ */
+export function executeWithPrivilegesWindows(
+  command: string,
+  args: string[] = []
+): Promise<ElevatedCommandResult> {
+  return new Promise((resolve) => {
+    try {
+      // Build PowerShell script to execute command with elevated privileges
+      // Use Start-Process with -Verb RunAs to trigger UAC prompt
+      // -Wait ensures we wait for completion
+      // -NoNewWindow keeps output in same console
+      // -PassThru allows us to capture exit code
+
+      // Escape arguments for PowerShell
+      const escapedArgs = args.map(arg => {
+        // Escape single quotes and wrap in single quotes for PowerShell
+        return `'${arg.replace(/'/g, "''")}'`;
+      }).join(', ');
+
+      // Build the PowerShell command
+      // We use a temporary file to capture stdout/stderr since Start-Process doesn't capture them
+      const tempOutFile = `$env:TEMP\\openclaw-install-out-${Date.now()}.txt`;
+      const tempErrFile = `$env:TEMP\\openclaw-install-err-${Date.now()}.txt`;
+
+      const psScript = `
+        $process = Start-Process -FilePath '${command}' -ArgumentList ${escapedArgs || '@()'} -Verb RunAs -Wait -PassThru -RedirectStandardOutput '${tempOutFile}' -RedirectStandardError '${tempErrFile}' -WindowStyle Hidden
+        $exitCode = $process.ExitCode
+        $stdout = Get-Content '${tempOutFile}' -Raw -ErrorAction SilentlyContinue
+        $stderr = Get-Content '${tempErrFile}' -Raw -ErrorAction SilentlyContinue
+        Remove-Item '${tempOutFile}' -ErrorAction SilentlyContinue
+        Remove-Item '${tempErrFile}' -ErrorAction SilentlyContinue
+        Write-Output "EXIT_CODE:$exitCode"
+        Write-Output "STDOUT:$stdout"
+        Write-Output "STDERR:$stderr"
+      `.trim();
+
+      const child = spawn('powershell.exe', [
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-Command', psScript
+      ]);
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      child.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      child.on('close', (code) => {
+        // Parse the output from PowerShell
+        const exitCodeMatch = stdout.match(/EXIT_CODE:(-?\d+)/);
+        const stdoutMatch = stdout.match(/STDOUT:([\s\S]*?)(?=STDERR:|$)/);
+        const stderrMatch = stdout.match(/STDERR:([\s\S]*?)$/);
+
+        const commandExitCode = exitCodeMatch ? parseInt(exitCodeMatch[1], 10) : code;
+        const commandStdout = stdoutMatch ? stdoutMatch[1].trim() : '';
+        const commandStderr = stderrMatch ? stderrMatch[1].trim() : stderr.trim();
+
+        // UAC cancellation or denial typically results in exit code 1 with specific error messages
+        const cancelled =
+          code === 1 && (
+            stderr.includes('cancelled') ||
+            stderr.includes('denied') ||
+            stderr.includes('elevation') ||
+            commandStderr.includes('cancelled') ||
+            commandStderr.includes('denied')
+          );
+
+        if (commandExitCode !== 0) {
+          resolve({
+            success: false,
+            stdout: commandStdout,
+            stderr: commandStderr,
+            exitCode: commandExitCode,
+            error: cancelled ? 'User cancelled UAC prompt' : `Command failed with exit code ${commandExitCode}`,
+            cancelled,
+          });
+          return;
+        }
+
+        resolve({
+          success: true,
+          stdout: commandStdout,
+          stderr: commandStderr,
+          exitCode: commandExitCode,
+          cancelled: false,
+        });
+      });
+
+      child.on('error', (err) => {
+        // Check if error indicates missing PowerShell
+        const isMissingTool = err.message.includes('ENOENT');
+
+        resolve({
+          success: false,
+          stdout: '',
+          stderr: '',
+          exitCode: null,
+          error: isMissingTool
+            ? 'PowerShell not found. Cannot request elevated privileges on Windows.'
+            : err.message,
+          cancelled: false,
+        });
+      });
+    } catch (err) {
+      resolve({
+        success: false,
+        stdout: '',
+        stderr: '',
+        exitCode: null,
+        error: err instanceof Error ? err.message : 'Unknown error',
+        cancelled: false,
+      });
+    }
+  });
+}
+
+/**
+ * Executes a command with elevated privileges on all platforms
+ * Uses AppleScript sudo prompt on macOS, pkexec on Linux with PolicyKit, UAC on Windows
  *
  * @param command - The command to execute (e.g., 'npm')
  * @param args - Arguments for the command (e.g., ['install', '-g', 'openclaw'])
@@ -176,14 +305,19 @@ export function executeWithPrivileges(
   return new Promise((resolve) => {
     const os = platform();
 
-    // Only support macOS and Linux
+    // Route to Windows-specific implementation
+    if (os === 'win32') {
+      return executeWithPrivilegesWindows(command, args).then(resolve);
+    }
+
+    // Only support macOS and Linux from here
     if (os !== 'darwin' && os !== 'linux') {
       resolve({
         success: false,
         stdout: '',
         stderr: '',
         exitCode: null,
-        error: `Unsupported platform: ${os}. This function only supports macOS and Linux.`,
+        error: `Unsupported platform: ${os}`,
         cancelled: false,
       });
       return;
