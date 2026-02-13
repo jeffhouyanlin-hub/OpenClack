@@ -132,3 +132,41 @@
   2. Vite dev server on port 5173 with HMR
   3. Electron app that loads from dev server and auto-reloads on changes
 - Notes for future sessions: Full hot-reloading development environment is now operational. Use `npm run dev` to start developing with instant feedback. Changes to renderer code will hot-reload without restarting Electron. Changes to main process will require Electron restart (can be enhanced with electron-reload in future if needed).
+
+### Session 5 — feat-005: Configure electron-builder for cross-platform packaging
+- Enhanced electron-builder configuration in package.json with comprehensive settings:
+  - Added buildResources directory pointing to assets
+  - Configured extraMetadata to ensure correct main entry point
+  - Set up macOS targets (dmg, zip) with x64 and arm64 architectures
+  - Configured DMG window layout and installation flow
+  - Added hardened runtime and entitlements for macOS security
+  - Set up Windows targets (NSIS, MSI) with x64 and ia32 architectures
+  - Configured NSIS installer with customizable installation directory and shortcuts
+  - Configured MSI installer with desktop and start menu shortcuts
+  - Set up Linux targets (AppImage, deb) with x64 and arm64 architectures
+  - Added Linux desktop integration with proper categories
+  - Configured Debian package with dependencies and post-install script
+  - Added artifact naming patterns for all platforms
+- Created build configuration files:
+  - build/entitlements.mac.plist: macOS entitlements for security features
+  - build/linux-after-install.sh: Post-installation script to update desktop database and icon cache
+- Created comprehensive test suite (electron-builder.test.ts) with 54 tests covering:
+  - Basic configuration (appId, productName, directories, files)
+  - macOS configuration (targets, icons, entitlements, hardened runtime)
+  - DMG configuration (layout, window dimensions, title)
+  - Windows configuration (targets, icons, publisher, artifact naming)
+  - NSIS configuration (installer options, shortcuts, icons)
+  - MSI configuration (installer options, shortcuts)
+  - Linux configuration (targets, categories, desktop integration)
+  - Debian package configuration (dependencies, post-install script)
+  - AppImage configuration (license)
+  - Build files existence and permissions
+  - Package scripts verification
+- Current test status: 142/142 passing (88 previous + 54 new for feat-005)
+- All TypeScript compilation passes for both main and renderer
+- Build process completes successfully
+- Configuration files validated (XML for plist, shell syntax for scripts)
+- Notes for future sessions: Cross-platform packaging is now fully configured. Ready to create actual assets (icons) in feat-006. The electron-builder config supports:
+  - macOS: Universal binaries (x64/arm64), DMG with custom layout, ZIP archives
+  - Windows: NSIS installer (customizable), MSI installer, both x64 and ia32
+  - Linux: AppImage (portable), Debian packages with dependencies and post-install hooks

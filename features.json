@@ -64,7 +64,7 @@
         "Configure Windows NSIS and MSI targets",
         "Configure Linux AppImage and deb targets"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {
