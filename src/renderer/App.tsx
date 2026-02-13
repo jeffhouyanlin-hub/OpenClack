@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { WelcomeScreen } from './components/WelcomeScreen';
 
 function App() {
   const [isInstalling, setIsInstalling] = useState(false);
@@ -10,19 +11,7 @@ function App() {
 
   return (
     <div className="app">
-      <header className="header">
-        <h1>OpenClack</h1>
-        <p>Silent installer for OpenClaw</p>
-      </header>
-      <main className="main">
-        <button
-          onClick={handleInstall}
-          disabled={isInstalling}
-          className="install-button"
-        >
-          {isInstalling ? 'Installing...' : 'Install OpenClaw'}
-        </button>
-      </main>
+      <WelcomeScreen onInstall={handleInstall} isInstalling={isInstalling} />
     </div>
   );
 }

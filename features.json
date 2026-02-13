@@ -90,7 +90,7 @@
         "Implement gradient background matching OpenClaw aesthetic",
         "Add Install button as primary CTA"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {

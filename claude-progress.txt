@@ -203,3 +203,39 @@
 - Build process completes successfully
 - Icon generation script runs successfully and creates all three platform icons
 - Notes for future sessions: Asset pipeline is fully operational. Icons are placeholder graphics with "OC" branding. For production, replace with professionally designed icons by updating the SVG in generate-icons.js or manually placing custom icon files in assets/icons/. The pipeline automatically runs before packaging to ensure icons are always up-to-date.
+### Session 7 — feat-007: Design and implement branded welcome screen
+- Created comprehensive WelcomeScreen component (src/renderer/components/WelcomeScreen.tsx):
+  - Branded logo with "OC" text in gradient-styled icon container
+  - App title "OpenClack" with professional typography
+  - Tagline "Silent installer for OpenClaw"
+  - Descriptive text explaining the app's purpose
+  - Primary install button with hover effects and disabled state
+- Implemented WelcomeScreen styling (src/renderer/components/WelcomeScreen.css):
+  - Full-screen gradient background (135deg, #667eea to #764ba2) matching OpenClaw aesthetic
+  - Responsive layout with centered content
+  - Logo with 120x120px size, gradient background, and glass-morphism effect
+  - Professional button styling with smooth transitions and shadows
+  - Mobile-responsive breakpoints for smaller screens
+- Updated App.tsx to use WelcomeScreen component instead of inline markup
+- Refactored global styles (src/renderer/styles.css) to support full-height layout
+- Installed testing dependencies:
+  - @testing-library/react for component testing
+  - @testing-library/jest-dom for DOM assertion matchers
+  - @testing-library/user-event for user interaction simulation
+- Configured vitest for React component testing:
+  - Created src/test-setup.ts to import jest-dom matchers
+  - Updated vitest.config.ts to include setupFiles
+  - Created src/vitest-env.d.ts for TypeScript type declarations
+  - Updated tsconfig.renderer.json to include @testing-library/jest-dom types
+- Created comprehensive test suite (src/renderer/components/WelcomeScreen.test.tsx) with 15 tests:
+  - Component rendering
+  - Title, tagline, description, and logo display
+  - Install button rendering and click handler
+  - Disabled state when isInstalling is true
+  - Button text changes during installation
+  - DOM structure and CSS class verification
+- Current test status: 188/188 passing (1 renderer + 6 main + 20 preload + 17 IPC handlers + 24 TypeScript config + 20 Vite dev + 54 electron-builder + 31 asset pipeline + 15 WelcomeScreen)
+- All TypeScript compilation passes for both main and renderer
+- Build process completes successfully
+- Notes for future sessions: WelcomeScreen is fully implemented and tested. The component is now ready to be integrated into a navigation state machine in feat-012. The gradient aesthetic matches OpenClaw branding and provides a professional first impression. The logo is currently a placeholder with "OC" text - can be updated to use actual SVG/image assets when available.
+
