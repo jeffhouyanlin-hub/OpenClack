@@ -103,7 +103,7 @@
         "Implement show/hide toggle for password-style inputs",
         "Add validation for API key format"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {
