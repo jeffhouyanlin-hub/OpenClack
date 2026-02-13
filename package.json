@@ -4,9 +4,10 @@
   "description": "Silent installer GUI for OpenClaw",
   "main": "dist/main/main.js",
   "scripts": {
-    "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
+    "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\" \"npm run dev:electron\"",
     "dev:main": "tsc -p tsconfig.main.json --watch",
     "dev:renderer": "vite",
+    "dev:electron": "wait-on dist/main/main.js && wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .",
     "build": "npm run build:main && npm run build:renderer",
     "build:main": "tsc -p tsconfig.main.json",
     "build:renderer": "vite build",
@@ -38,6 +39,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/ui": "^2.1.8",
     "concurrently": "^9.1.2",
+    "cross-env": "^10.1.0",
     "electron": "^34.0.0",
     "electron-builder": "^25.1.8",
     "eslint": "^9.18.0",
@@ -46,7 +48,8 @@
     "jsdom": "^28.0.0",
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "wait-on": "^9.0.4"
   },
   "dependencies": {
     "react": "^18.3.1",

@@ -51,7 +51,7 @@
         "Configure main process to load from dev server in development",
         "Add concurrently script to run both main and renderer in dev mode"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {

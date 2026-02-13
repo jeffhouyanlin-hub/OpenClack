@@ -105,3 +105,30 @@
 - Type checking works correctly with strict settings enabled
 - Notes for future sessions: TypeScript is now properly configured with separate compilation targets for main (Node.js/Electron) and renderer (Browser/React). Use npm run type-check to verify types across both processes. The strict compiler options will help catch bugs early.
 
+
+### Session 4 — feat-004: Set up Vite dev server for hot-reloading in development
+- Enhanced vite.config.ts with:
+  - strictPort: true to fail if port 5173 is already in use (prevents conflicts)
+  - HMR configuration with explicit host and port settings
+  - Proper server configuration for development hot-reloading
+- Added new npm scripts to package.json:
+  - dev:electron: Waits for main process compilation and Vite server, then launches Electron with NODE_ENV=development
+  - Updated dev script to run all three processes concurrently (dev:main, dev:renderer, dev:electron)
+- Installed required dependencies:
+  - wait-on: For waiting on file/HTTP resources before launching Electron
+  - cross-env: For cross-platform NODE_ENV setting
+- Main process already configured to load from http://localhost:5173 in development mode
+- Main process already opens DevTools in development mode for debugging
+- Created comprehensive test suite (vite-dev.test.ts) with 20 tests covering:
+  - Vite configuration (React, TypeScript, port, strictPort, HMR)
+  - Development scripts in package.json
+  - Main process URL loading logic
+  - Hot Module Replacement support
+- Current test status: 88/88 passing (68 previous + 20 new for feat-004)
+- All TypeScript compilation passes for both main and renderer
+- Build process completes successfully
+- Dev script successfully starts all three processes:
+  1. Main process TypeScript compilation in watch mode
+  2. Vite dev server on port 5173 with HMR
+  3. Electron app that loads from dev server and auto-reloads on changes
+- Notes for future sessions: Full hot-reloading development environment is now operational. Use `npm run dev` to start developing with instant feedback. Changes to renderer code will hot-reload without restarting Electron. Changes to main process will require Electron restart (can be enhanced with electron-reload in future if needed).
