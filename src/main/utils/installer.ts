@@ -302,14 +302,14 @@ export function executeWithPrivileges(
   args: string[] = [],
   options: { message?: string } = {}
 ): Promise<ElevatedCommandResult> {
+  const os = platform();
+
+  // Route to Windows-specific implementation
+  if (os === 'win32') {
+    return executeWithPrivilegesWindows(command, args);
+  }
+
   return new Promise((resolve) => {
-    const os = platform();
-
-    // Route to Windows-specific implementation
-    if (os === 'win32') {
-      return executeWithPrivilegesWindows(command, args).then(resolve);
-    }
-
     // Only support macOS and Linux from here
     if (os !== 'darwin' && os !== 'linux') {
       resolve({
