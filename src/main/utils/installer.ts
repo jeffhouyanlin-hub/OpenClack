@@ -409,3 +409,281 @@ export function executeWithPrivileges(
     }
   });
 }
+
+/**
+ * Result of Node.js installation
+ */
+export interface NodeInstallResult {
+  /** Whether installation succeeded */
+  success: boolean;
+  /** Installed Node.js version, if successful */
+  version?: string;
+  /** Error message if installation failed */
+  error?: string;
+  /** Whether the user cancelled the installation */
+  cancelled: boolean;
+  /** Method used for installation (e.g., 'homebrew', 'direct') */
+  method?: string;
+}
+
+/**
+ * Progress callback for streaming installation output
+ */
+export type InstallProgressCallback = (message: string, level: 'info' | 'warning' | 'error') => void;
+
+/**
+ * Detects if Homebrew is installed on macOS
+ * @returns Promise resolving to true if Homebrew is available
+ */
+export function detectHomebrew(): Promise<boolean> {
+  return new Promise((resolve) => {
+    try {
+      const child = spawn('which', ['brew']);
+      let stdout = '';
+
+      child.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      child.on('close', (code) => {
+        // which returns 0 if found, non-zero if not found
+        resolve(code === 0 && stdout.trim().length > 0);
+      });
+
+      child.on('error', () => {
+        // Command not found or execution error
+        resolve(false);
+      });
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
+/**
+ * Installs Node.js on macOS using Homebrew
+ * @param onProgress - Optional callback for progress updates
+ * @returns Promise resolving to NodeInstallResult
+ */
+export async function installNodeViaBrew(
+  onProgress?: InstallProgressCallback
+): Promise<NodeInstallResult> {
+  try {
+    onProgress?.('Installing Node.js via Homebrew...', 'info');
+
+    // Execute brew install node with elevated privileges
+    const result = await executeWithPrivileges(
+      'brew',
+      ['install', 'node'],
+      { message: 'OpenClack needs to install Node.js using Homebrew.' }
+    );
+
+    if (result.cancelled) {
+      onProgress?.('Installation cancelled by user', 'warning');
+      return {
+        success: false,
+        cancelled: true,
+        error: 'User cancelled installation',
+        method: 'homebrew',
+      };
+    }
+
+    if (!result.success) {
+      onProgress?.(`Homebrew installation failed: ${result.error}`, 'error');
+      return {
+        success: false,
+        cancelled: false,
+        error: result.error || 'Homebrew installation failed',
+        method: 'homebrew',
+      };
+    }
+
+    // Verify installation
+    onProgress?.('Verifying Node.js installation...', 'info');
+    const versionResult = await detectNodeVersion();
+
+    if (!versionResult.installed || !versionResult.meetsRequirement) {
+      onProgress?.('Node.js installation verification failed', 'error');
+      return {
+        success: false,
+        cancelled: false,
+        error: 'Installation completed but Node.js version verification failed',
+        method: 'homebrew',
+      };
+    }
+
+    onProgress?.(`Node.js ${versionResult.version} installed successfully`, 'info');
+    return {
+      success: true,
+      cancelled: false,
+      version: versionResult.version || undefined,
+      method: 'homebrew',
+    };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : 'Unknown error';
+    onProgress?.(error, 'error');
+    return {
+      success: false,
+      cancelled: false,
+      error,
+      method: 'homebrew',
+    };
+  }
+}
+
+/**
+ * Installs Node.js on macOS by downloading and running the official installer
+ * @param onProgress - Optional callback for progress updates
+ * @returns Promise resolving to NodeInstallResult
+ */
+export async function installNodeDirectMacOS(
+  onProgress?: InstallProgressCallback
+): Promise<NodeInstallResult> {
+  try {
+    // Import https and fs modules
+    const https = await import('https');
+    const fs = await import('fs');
+    const path = await import('path');
+    const { tmpdir } = await import('os');
+
+    // Determine architecture (arm64 or x64)
+    const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+
+    // Latest LTS version URL (22.x)
+    const downloadUrl = `https://nodejs.org/dist/latest-v22.x/node-v22-${arch}.pkg`;
+    const tmpDir = tmpdir();
+    const installerPath = path.join(tmpDir, `node-installer-${Date.now()}.pkg`);
+
+    onProgress?.(`Downloading Node.js installer for ${arch}...`, 'info');
+
+    // Download the installer
+    await new Promise<void>((resolve, reject) => {
+      const file = fs.createWriteStream(installerPath);
+
+      https.get(downloadUrl, (response) => {
+        if (response.statusCode === 302 || response.statusCode === 301) {
+          // Follow redirect
+          const redirectUrl = response.headers.location;
+          if (!redirectUrl) {
+            reject(new Error('Redirect URL not found'));
+            return;
+          }
+
+          https.get(redirectUrl, (redirectResponse) => {
+            redirectResponse.pipe(file);
+            file.on('finish', () => {
+              file.close();
+              resolve();
+            });
+          }).on('error', reject);
+        } else {
+          response.pipe(file);
+          file.on('finish', () => {
+            file.close();
+            resolve();
+          });
+        }
+      }).on('error', (err) => {
+        fs.unlinkSync(installerPath);
+        reject(err);
+      });
+    });
+
+    onProgress?.('Download complete. Installing Node.js...', 'info');
+
+    // Execute the installer with elevated privileges
+    const result = await executeWithPrivileges(
+      'installer',
+      ['-pkg', installerPath, '-target', '/'],
+      { message: 'OpenClack needs to install Node.js.' }
+    );
+
+    // Clean up installer file
+    try {
+      fs.unlinkSync(installerPath);
+    } catch {
+      // Ignore cleanup errors
+    }
+
+    if (result.cancelled) {
+      onProgress?.('Installation cancelled by user', 'warning');
+      return {
+        success: false,
+        cancelled: true,
+        error: 'User cancelled installation',
+        method: 'direct',
+      };
+    }
+
+    if (!result.success) {
+      onProgress?.(`Installation failed: ${result.error}`, 'error');
+      return {
+        success: false,
+        cancelled: false,
+        error: result.error || 'Installer execution failed',
+        method: 'direct',
+      };
+    }
+
+    // Verify installation
+    onProgress?.('Verifying Node.js installation...', 'info');
+    const versionResult = await detectNodeVersion();
+
+    if (!versionResult.installed || !versionResult.meetsRequirement) {
+      onProgress?.('Node.js installation verification failed', 'error');
+      return {
+        success: false,
+        cancelled: false,
+        error: 'Installation completed but Node.js version verification failed',
+        method: 'direct',
+      };
+    }
+
+    onProgress?.(`Node.js ${versionResult.version} installed successfully`, 'info');
+    return {
+      success: true,
+      cancelled: false,
+      version: versionResult.version || undefined,
+      method: 'direct',
+    };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : 'Unknown error';
+    onProgress?.(error, 'error');
+    return {
+      success: false,
+      cancelled: false,
+      error,
+      method: 'direct',
+    };
+  }
+}
+
+/**
+ * Installs Node.js on macOS
+ * Tries Homebrew first, falls back to direct installer download
+ *
+ * @param onProgress - Optional callback for progress updates
+ * @returns Promise resolving to NodeInstallResult
+ */
+export async function installNodeMacOS(
+  onProgress?: InstallProgressCallback
+): Promise<NodeInstallResult> {
+  if (platform() !== 'darwin') {
+    return {
+      success: false,
+      cancelled: false,
+      error: 'This function is only supported on macOS',
+    };
+  }
+
+  onProgress?.('Checking for Homebrew...', 'info');
+  const hasHomebrew = await detectHomebrew();
+
+  if (hasHomebrew) {
+    onProgress?.('Homebrew detected, using it to install Node.js', 'info');
+    return installNodeViaBrew(onProgress);
+  }
+
+  onProgress?.('Homebrew not found, downloading Node.js installer', 'info');
+  return installNodeDirectMacOS(onProgress);
+}

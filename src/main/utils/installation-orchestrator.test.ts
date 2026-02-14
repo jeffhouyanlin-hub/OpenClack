@@ -9,6 +9,14 @@ vi.mock('./installer');
 describe('InstallationOrchestrator', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Default mock for installNodeMacOS
+    vi.mocked(installer.installNodeMacOS).mockResolvedValue({
+      success: true,
+      cancelled: false,
+      version: '22.12.0',
+      method: 'homebrew',
+    });
   });
 
   afterEach(() => {

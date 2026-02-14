@@ -509,3 +509,44 @@
 - All TypeScript compilation passes for both main and renderer
 - Build process completes successfully
 - Notes for future sessions: Navigation state machine is fully operational and tested. The app can now transition between all screens with proper state management. API keys are persisted across navigation. The installation flow currently uses a placeholder setTimeout simulation - future features (feat-020, feat-021, feat-022) will replace this with actual installation logic that connects to the InstallationOrchestrator. Error handling is integrated into the state machine but not yet triggered (will be implemented in error handling features). The handleLaunch placeholder logs to console - will be replaced with actual launcher in feat-026.
+
+### Session 16 — feat-015: Implement Node.js installation on macOS
+- Created comprehensive macOS Node.js installation functionality in src/main/utils/installer.ts:
+  - detectHomebrew(): Checks if Homebrew is installed via `which brew` command
+  - installNodeViaBrew(): Installs Node.js using `brew install node` with elevated privileges, includes progress callbacks
+  - installNodeDirectMacOS(): Downloads official Node.js .pkg installer from nodejs.org and runs with elevated privileges
+    - Automatically detects architecture (arm64 vs x64) for correct installer download
+    - Downloads from latest-v22.x to ensure minimum version requirement is met
+    - Handles HTTP redirects during download
+    - Uses temporary file for download, cleans up after installation
+  - installNodeMacOS(): Main entry point that tries Homebrew first, falls back to direct installer
+- Added new types and interfaces:
+  - NodeInstallResult: Contains success, cancelled, version, error, and method fields
+  - InstallProgressCallback: Type for progress streaming callbacks with message and log level
+- All installation functions verify successful installation by calling detectNodeVersion() after completion
+- Implemented comprehensive error handling:
+  - User cancellation detection and graceful handling
+  - Installation failure reporting with detailed error messages
+  - Progress callbacks for real-time UI updates during long-running operations
+- Integrated with InstallationOrchestrator:
+  - Updated executeNodeInstallPhase() to call installNodeMacOS() on darwin platform
+  - Added progress callback integration to stream logs via orchestrator's emitLog()
+  - Proper cancellation handling that sets orchestrator's cancelled flag
+  - Windows and Linux show "not yet implemented" messages (to be added in feat-016, feat-017)
+  - Updated imports to include platform() from 'os' module
+- Created comprehensive test suite (src/main/utils/macos-node-install.test.ts) with 18 tests covering:
+  - detectHomebrew: 5 tests (found, not found, errors, empty output, exceptions)
+  - installNodeViaBrew: 3 tests (function existence, return types, callback handling)
+  - installNodeDirectMacOS: 3 tests (function existence, return types, callback handling)
+  - installNodeMacOS: 4 tests (function existence, return types, platform validation, callback handling)
+  - Integration: 3 tests (exports, signatures, promise returns)
+- Updated installation-orchestrator.test.ts to mock installNodeMacOS with default successful result
+- Current test status: 447/447 passing (429 previous + 18 new for macOS Node.js installation)
+- All TypeScript compilation passes for both main and renderer
+- Build process completes successfully
+- Notes for future sessions: macOS Node.js installation is fully implemented and integrated. The InstallationOrchestrator now has real installation logic for macOS users. When Node.js is missing or below the minimum version, the orchestrator will:
+  1. Attempt to use Homebrew if available (most reliable on macOS)
+  2. Fall back to downloading and running the official .pkg installer
+  3. Verify the installation completed successfully
+  4. Handle user cancellation gracefully
+  Future features (feat-016, feat-017) should follow this same pattern for Windows and Linux. The progress callback mechanism is ready for streaming real-time updates to the renderer.

@@ -194,7 +194,7 @@
         "If not, download Node.js installer from nodejs.org",
         "Execute installer with sudo privileges and track progress"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {

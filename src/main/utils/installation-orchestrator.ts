@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
-import { detectNodeVersion } from './installer';
+import { detectNodeVersion, installNodeMacOS } from './installer';
+import { platform } from 'os';
 import type { InstallConfig, InstallProgress, LogEntry, InstallError, InstallResult } from '../../types/ipc';
 
 /**
@@ -130,11 +131,37 @@ export class InstallationOrchestrator extends EventEmitter {
     this.emitProgress(15, 'Installing Node.js...');
     this.emitLog('info', 'Starting Node.js installation');
 
-    // Placeholder for actual Node.js installation
-    // Will be implemented in feat-015, feat-016, feat-017
-    this.emitLog('info', 'Node.js installation placeholder - will be implemented in future features');
+    // Install Node.js based on platform
+    const os = platform();
 
-    this.emitProgress(30, 'Node.js installation complete');
+    if (os === 'darwin') {
+      // macOS installation
+      const installResult = await installNodeMacOS((message, level) => {
+        this.emitLog(level, message);
+      });
+
+      if (installResult.cancelled) {
+        this.cancelled = true;
+        return;
+      }
+
+      if (!installResult.success) {
+        throw new Error(installResult.error || 'Node.js installation failed');
+      }
+
+      this.emitLog('info', `Node.js ${installResult.version} installed successfully via ${installResult.method}`);
+      this.emitProgress(30, 'Node.js installation complete');
+    } else if (os === 'win32') {
+      // Windows installation - will be implemented in feat-016
+      this.emitLog('warning', 'Windows Node.js installation not yet implemented (feat-016)');
+      this.emitProgress(30, 'Node.js installation skipped (not yet implemented)');
+    } else if (os === 'linux') {
+      // Linux installation - will be implemented in feat-017
+      this.emitLog('warning', 'Linux Node.js installation not yet implemented (feat-017)');
+      this.emitProgress(30, 'Node.js installation skipped (not yet implemented)');
+    } else {
+      throw new Error(`Unsupported platform: ${os}`);
+    }
   }
 
   /**
