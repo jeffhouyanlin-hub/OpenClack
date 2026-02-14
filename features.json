@@ -155,7 +155,7 @@
         "Add navigation functions (goToSettings, startInstall, etc.)",
         "Ensure proper state flow and prevent invalid transitions"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {

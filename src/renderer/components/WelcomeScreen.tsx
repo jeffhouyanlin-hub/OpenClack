@@ -3,9 +3,10 @@ import './WelcomeScreen.css';
 interface WelcomeScreenProps {
   onInstall: () => void;
   isInstalling: boolean;
+  onSettings?: () => void;
 }
 
-export function WelcomeScreen({ onInstall, isInstalling }: WelcomeScreenProps) {
+export function WelcomeScreen({ onInstall, isInstalling, onSettings }: WelcomeScreenProps) {
   return (
     <div className="welcome-screen">
       <div className="welcome-content">
@@ -30,6 +31,16 @@ export function WelcomeScreen({ onInstall, isInstalling }: WelcomeScreenProps) {
         >
           {isInstalling ? 'Installing...' : 'Install OpenClaw'}
         </button>
+
+        {onSettings && (
+          <button
+            className="settings-button secondary"
+            onClick={onSettings}
+            disabled={isInstalling}
+          >
+            Configure API Keys
+          </button>
+        )}
       </div>
     </div>
   );

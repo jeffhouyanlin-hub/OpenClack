@@ -151,4 +151,87 @@ describe('WelcomeScreen', () => {
     expect(logo).toBeInTheDocument();
     expect(logoIcon).toBeInTheDocument();
   });
+
+  describe('Settings Button', () => {
+    it('does not render settings button when onSettings is not provided', () => {
+      const mockOnInstall = vi.fn();
+      render(<WelcomeScreen onInstall={mockOnInstall} isInstalling={false} />);
+
+      const settingsButton = screen.queryByText('Configure API Keys');
+      expect(settingsButton).not.toBeInTheDocument();
+    });
+
+    it('renders settings button when onSettings is provided', () => {
+      const mockOnInstall = vi.fn();
+      const mockOnSettings = vi.fn();
+      render(
+        <WelcomeScreen
+          onInstall={mockOnInstall}
+          isInstalling={false}
+          onSettings={mockOnSettings}
+        />
+      );
+
+      const settingsButton = screen.getByRole('button', {
+        name: /configure api keys/i,
+      });
+      expect(settingsButton).toBeInTheDocument();
+      expect(settingsButton).toHaveClass('settings-button', 'secondary');
+    });
+
+    it('calls onSettings when settings button is clicked', () => {
+      const mockOnInstall = vi.fn();
+      const mockOnSettings = vi.fn();
+      render(
+        <WelcomeScreen
+          onInstall={mockOnInstall}
+          isInstalling={false}
+          onSettings={mockOnSettings}
+        />
+      );
+
+      const settingsButton = screen.getByRole('button', {
+        name: /configure api keys/i,
+      });
+      fireEvent.click(settingsButton);
+
+      expect(mockOnSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it('disables settings button when isInstalling is true', () => {
+      const mockOnInstall = vi.fn();
+      const mockOnSettings = vi.fn();
+      render(
+        <WelcomeScreen
+          onInstall={mockOnInstall}
+          isInstalling={true}
+          onSettings={mockOnSettings}
+        />
+      );
+
+      const settingsButton = screen.getByRole('button', {
+        name: /configure api keys/i,
+      });
+      expect(settingsButton).toBeDisabled();
+    });
+
+    it('does not call onSettings when button is disabled', () => {
+      const mockOnInstall = vi.fn();
+      const mockOnSettings = vi.fn();
+      render(
+        <WelcomeScreen
+          onInstall={mockOnInstall}
+          isInstalling={true}
+          onSettings={mockOnSettings}
+        />
+      );
+
+      const settingsButton = screen.getByRole('button', {
+        name: /configure api keys/i,
+      });
+      fireEvent.click(settingsButton);
+
+      expect(mockOnSettings).not.toHaveBeenCalled();
+    });
+  });
 });

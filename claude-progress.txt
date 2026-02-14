@@ -479,3 +479,33 @@
 - All previously passing tests still pass
 - Features.json updated: feat-011 marked as passing
 - No issues encountered, implementation complete
+
+### Session 15 — feat-012: Implement navigation state machine between screens
+- Created comprehensive navigation state machine in App.tsx with AppScreen enum (welcome, settings, installing, success, error)
+- Implemented AppState interface managing: currentScreen, apiKeys, installProgress, currentStep, logs, error, installationSummary
+- Added navigation functions: goToSettings, goToWelcome, startInstall, handleRetry, handleSaveSettings, handleLaunch, handleClose
+- Enhanced WelcomeScreen component with optional onSettings prop and "Configure API Keys" button
+- Added CSS styling for secondary settings button with hover effects
+- Implemented state persistence across screen transitions (API keys maintained when navigating between screens)
+- Created placeholder installation simulation that transitions through installing -> success states
+- Integrated all five screen components (WelcomeScreen, SettingsScreen, InstallationScreen, SuccessScreen, ErrorScreen) into unified navigation
+- Implemented renderScreen() function with proper screen routing based on currentScreen state
+- Created comprehensive test suite (src/renderer/App-navigation.test.tsx) with 22 tests covering:
+  - Initial state (welcome screen, configure button)
+  - Welcome -> Settings navigation
+  - Settings -> Welcome navigation (back, save, skip)
+  - Welcome -> Installing navigation
+  - Installing -> Success navigation
+  - Error handling integration
+  - State transitions and persistence
+  - Invalid transitions prevention
+  - Screen enum verification
+  - Accessibility (ARIA roles, focus management)
+  - Edge cases (rapid transitions, default screen)
+  - Close and Launch functionality
+- Updated WelcomeScreen tests to include 5 new tests for settings button functionality
+- All navigation flows properly validated with user interaction tests
+- Current test status: 429/429 passing (402 previous + 22 new navigation tests + 5 new WelcomeScreen tests)
+- All TypeScript compilation passes for both main and renderer
+- Build process completes successfully
+- Notes for future sessions: Navigation state machine is fully operational and tested. The app can now transition between all screens with proper state management. API keys are persisted across navigation. The installation flow currently uses a placeholder setTimeout simulation - future features (feat-020, feat-021, feat-022) will replace this with actual installation logic that connects to the InstallationOrchestrator. Error handling is integrated into the state machine but not yet triggered (will be implemented in error handling features). The handleLaunch placeholder logs to console - will be replaced with actual launcher in feat-026.
