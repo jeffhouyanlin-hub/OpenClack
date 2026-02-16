@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { detectNodeVersion, installNodeMacOS, installNodeWindows, installNodeLinux, installOpenclaw, onboardOpenclaw } from './installer';
+import { detectNodeVersion, installNodeMacOS, installNodeWindows, installNodeLinux, installOpenclaw, onboardOpenclaw, configureAPIKeys } from './installer';
 import { platform } from 'os';
 import type { InstallConfig, InstallProgress, LogEntry, InstallError, InstallResult } from '../../types/ipc';
 
@@ -260,10 +260,24 @@ export class InstallationOrchestrator extends EventEmitter {
 
     this.emitLog('info', 'Writing API keys to OpenClaw configuration');
 
-    // Placeholder for API key configuration
-    // Will be implemented in feat-022
+    // Write API keys to OpenClaw config file
+    const result = await configureAPIKeys(
+      this.config.apiKeys,
+      (message: string, level: 'info' | 'warning' | 'error' | 'debug') => {
+        this.emitLog(level, message);
+      }
+    );
+
+    if (this.cancelled) {
+      throw new Error('Installation cancelled by user');
+    }
+
+    if (!result.success) {
+      throw new Error(`Failed to configure API keys: ${result.error}`);
+    }
+
     const keyCount = Object.keys(this.config.apiKeys).filter(k => this.config.apiKeys![k]).length;
-    this.emitLog('info', `Configuration placeholder - ${keyCount} API key(s) will be saved in feat-022`);
+    this.emitLog('info', `Successfully configured ${keyCount} API key(s)`);
 
     this.emitProgress(95, 'Configuration complete');
   }

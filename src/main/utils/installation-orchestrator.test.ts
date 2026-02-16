@@ -46,6 +46,12 @@ describe('InstallationOrchestrator', () => {
       success: true,
       cancelled: false,
     });
+
+    // Default mock for configureAPIKeys
+    vi.mocked(installer.configureAPIKeys).mockResolvedValue({
+      success: true,
+      configPath: '/mock/home/.openclaw/config.json',
+    });
   });
 
   afterEach(() => {

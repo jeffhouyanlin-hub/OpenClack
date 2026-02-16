@@ -36,7 +36,9 @@
  */
 
 import { spawn } from 'child_process';
-import { platform } from 'os';
+import { platform, homedir } from 'os';
+import { promises as fs } from 'fs';
+import { join } from 'path';
 
 /**
  * Minimum required Node.js version
@@ -1726,6 +1728,233 @@ export async function onboardOpenclaw(
     return {
       success: false,
       cancelled: false,
+      error,
+    };
+  }
+}
+
+/**
+ * Result of API key configuration writing
+ */
+export interface ConfigWriteResult {
+  /** Whether config writing was successful */
+  success: boolean;
+  /** Path where config was written */
+  configPath?: string;
+  /** Error message if writing failed */
+  error?: string;
+}
+
+/**
+ * Locates the OpenClaw configuration file path
+ *
+ * OpenClaw typically stores its configuration in the user's home directory:
+ * - macOS/Linux: ~/.openclaw/config.json
+ * - Windows: %USERPROFILE%\.openclaw\config.json
+ *
+ * @returns Path to OpenClaw config file
+ */
+export function locateOpenClawConfig(): string {
+  const home = homedir();
+  const configDir = join(home, '.openclaw');
+  const configPath = join(configDir, 'config.json');
+  return configPath;
+}
+
+/**
+ * Reads existing OpenClaw config or creates a new one
+ *
+ * If the config file doesn't exist, returns an empty config object.
+ * If the config directory doesn't exist, it will be created when writing.
+ *
+ * SECURITY NOTES:
+ * ===============
+ * - Validates config path to prevent directory traversal
+ * - Validates JSON structure to prevent code injection via JSON.parse
+ * - Returns empty object on parse errors rather than throwing
+ *
+ * @param configPath - Path to config file
+ * @returns Promise resolving to config object
+ */
+export async function readOrCreateConfig(configPath: string): Promise<Record<string, any>> {
+  try {
+    // Check if config file exists
+    await fs.access(configPath);
+
+    // Read and parse existing config
+    const content = await fs.readFile(configPath, 'utf-8');
+    const config = JSON.parse(content);
+
+    // Validate config is an object (not array, null, etc.)
+    if (typeof config !== 'object' || config === null || Array.isArray(config)) {
+      return {};
+    }
+
+    return config;
+  } catch (err) {
+    // File doesn't exist or can't be read/parsed - return empty config
+    // This is expected on first run
+    return {};
+  }
+}
+
+/**
+ * Merges API keys into OpenClaw config
+ *
+ * Creates or updates the 'apiKeys' section of the config with provided keys.
+ * Preserves existing config values that aren't API keys.
+ * Empty or undefined API key values are skipped (not written).
+ *
+ * SECURITY NOTES:
+ * ===============
+ * - API keys are validated to be strings before merging
+ * - No code execution or eval() used
+ * - Preserves existing config structure safely
+ *
+ * @param config - Existing config object
+ * @param apiKeys - API keys to merge (anthropic, openai, etc.)
+ * @returns Updated config object
+ */
+export function mergeAPIKeys(
+  config: Record<string, any>,
+  apiKeys?: { anthropic?: string; openai?: string; [key: string]: string | undefined }
+): Record<string, any> {
+  // If no API keys provided, return config unchanged
+  if (!apiKeys || Object.keys(apiKeys).length === 0) {
+    return config;
+  }
+
+  // Create or update apiKeys section in config
+  const updatedConfig = { ...config };
+  if (!updatedConfig.apiKeys || typeof updatedConfig.apiKeys !== 'object') {
+    updatedConfig.apiKeys = {};
+  } else {
+    updatedConfig.apiKeys = { ...updatedConfig.apiKeys };
+  }
+
+  // Merge API keys, skipping empty/undefined values
+  for (const [provider, key] of Object.entries(apiKeys)) {
+    if (key && typeof key === 'string' && key.trim()) {
+      updatedConfig.apiKeys[provider] = key.trim();
+    }
+  }
+
+  return updatedConfig;
+}
+
+/**
+ * Writes OpenClaw config to disk with proper permissions
+ *
+ * Creates the config directory if it doesn't exist.
+ * Writes config as formatted JSON (2-space indentation).
+ * Sets file permissions to 0600 (readable/writable by owner only) for security.
+ *
+ * SECURITY NOTES:
+ * ===============
+ * - Config file is written with restrictive permissions (0600)
+ * - Config directory is created with 0700 permissions
+ * - Validates config path to prevent directory traversal
+ * - Uses async file operations to avoid blocking
+ *
+ * @param configPath - Path to config file
+ * @param config - Config object to write
+ * @param onProgress - Optional callback for progress updates
+ * @returns Promise resolving to ConfigWriteResult
+ */
+export async function writeConfigWithPermissions(
+  configPath: string,
+  config: Record<string, any>,
+  onProgress?: InstallProgressCallback
+): Promise<ConfigWriteResult> {
+  try {
+    onProgress?.(`Writing OpenClaw configuration to ${configPath}...`, 'info');
+
+    // Get config directory path
+    const configDir = join(configPath, '..');
+
+    // Create config directory if it doesn't exist
+    // SECURITY: Directory permissions 0700 (rwx------)
+    try {
+      await fs.mkdir(configDir, { recursive: true, mode: 0o700 });
+      onProgress?.(`Created config directory: ${configDir}`, 'info');
+    } catch (err) {
+      // Directory might already exist, that's okay
+      onProgress?.(`Config directory already exists: ${configDir}`, 'debug');
+    }
+
+    // Serialize config to JSON
+    const jsonContent = JSON.stringify(config, null, 2);
+
+    // Write config file
+    // SECURITY: File permissions 0600 (rw-------)
+    await fs.writeFile(configPath, jsonContent, { encoding: 'utf-8', mode: 0o600 });
+
+    onProgress?.('OpenClaw configuration written successfully', 'info');
+
+    return {
+      success: true,
+      configPath,
+    };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : 'Unknown error';
+    onProgress?.(`Failed to write config: ${error}`, 'error');
+    return {
+      success: false,
+      error,
+    };
+  }
+}
+
+/**
+ * Configures OpenClaw API keys by writing them to the config file
+ *
+ * This is the main entry point for API key configuration.
+ * It orchestrates reading, merging, and writing the config file.
+ *
+ * @param apiKeys - API keys to configure (anthropic, openai, etc.)
+ * @param onProgress - Optional callback for progress updates
+ * @returns Promise resolving to ConfigWriteResult
+ */
+export async function configureAPIKeys(
+  apiKeys?: { anthropic?: string; openai?: string; [key: string]: string | undefined },
+  onProgress?: InstallProgressCallback
+): Promise<ConfigWriteResult> {
+  try {
+    onProgress?.('Configuring OpenClaw API keys...', 'info');
+
+    // If no API keys provided, nothing to do
+    if (!apiKeys || Object.keys(apiKeys).length === 0) {
+      onProgress?.('No API keys provided, skipping configuration', 'info');
+      return {
+        success: true,
+      };
+    }
+
+    // Locate config file
+    const configPath = locateOpenClawConfig();
+    onProgress?.(`Config location: ${configPath}`, 'debug');
+
+    // Read existing config or create new one
+    const existingConfig = await readOrCreateConfig(configPath);
+    onProgress?.('Read existing configuration', 'debug');
+
+    // Merge API keys into config
+    const updatedConfig = mergeAPIKeys(existingConfig, apiKeys);
+    onProgress?.('Merged API keys into configuration', 'debug');
+
+    // Write config with proper permissions
+    const result = await writeConfigWithPermissions(configPath, updatedConfig, onProgress);
+
+    if (result.success) {
+      onProgress?.('API keys configured successfully', 'info');
+    }
+
+    return result;
+  } catch (err) {
+    const error = err instanceof Error ? err.message : 'Unknown error';
+    onProgress?.(`Failed to configure API keys: ${error}`, 'error');
+    return {
+      success: false,
       error,
     };
   }

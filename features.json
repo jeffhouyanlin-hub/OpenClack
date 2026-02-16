@@ -285,7 +285,7 @@
         "Merge API keys into config (Anthropic, OpenAI, etc.)",
         "Write config back to disk with proper permissions"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {

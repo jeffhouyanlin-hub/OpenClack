@@ -806,3 +806,45 @@
   4. Handles user cancellation gracefully
   5. Verifies onboarding completed successfully
   The onboarding phase is now operational and will be executed after OpenClaw npm installation (feat-020). Future feature feat-022 will add direct API key file configuration as a fallback mechanism.
+
+### Session 25 — feat-022: Implement API key configuration writing
+- Created comprehensive API key configuration functionality in src/main/utils/installer.ts:
+  - locateOpenClawConfig(): Returns path to OpenClaw config file (~/.openclaw/config.json)
+  - readOrCreateConfig(): Reads existing config or returns empty object if file doesn't exist
+  - mergeAPIKeys(): Safely merges API keys into config while preserving other settings
+  - writeConfigWithPermissions(): Writes config to disk with secure file permissions (0600)
+  - configureAPIKeys(): Main entry point that orchestrates reading, merging, and writing
+- Added necessary imports to installer.ts (homedir, fs.promises, join)
+- All functions include comprehensive security notes and proper error handling
+- Config file is written with restrictive permissions:
+  - Config directory: 0700 (rwx------) - owner only
+  - Config file: 0600 (rw-------) - readable/writable by owner only
+- Integrated API key configuration into InstallationOrchestrator:
+  - Updated import to include configureAPIKeys
+  - Replaced placeholder implementation in executeConfigurationPhase()
+  - Calls configureAPIKeys() with progress callback streaming
+  - Handles cancellation and errors consistently with other phases
+  - Logs successful configuration with count of keys configured
+- Created comprehensive test suite (src/main/utils/config-api-keys.test.ts) with 33 tests:
+  - locateOpenClawConfig: 4 tests (path validation, consistency)
+  - readOrCreateConfig: 6 tests (existing config, missing file, invalid JSON, non-object results)
+  - mergeAPIKeys: 11 tests (merge into empty/existing config, preserve settings, update keys, skip empty/undefined, trim whitespace, custom providers)
+  - writeConfigWithPermissions: 4 tests (write file, create directory, JSON formatting, progress callbacks)
+  - configureAPIKeys: 6 tests (successful config, skip empty, progress callbacks, multiple keys, result structure)
+  - Integration tests: 2 tests (full flow, preserve existing settings)
+- Fixed tsconfig.main.json to exclude test files from compilation (added **/*.test.ts, **/*.test.tsx to exclude)
+- Fixed onboard-openclaw.test.ts TypeScript errors:
+  - Renamed unused config parameter to _config (line 23)
+  - Changed test to use valid string values instead of invalid types (lines 234-242, 343-373)
+- Updated installation-orchestrator.test.ts to mock configureAPIKeys with successful result
+- Current test status: 701/701 passing, 6 skipped (all previous tests + 33 new for feat-022)
+- All TypeScript compilation passes for both main and renderer
+- Build process completes successfully
+- Features.json updated: feat-022 marked as passing
+- Notes for future sessions: API key configuration is fully implemented and integrated. The InstallationOrchestrator now has complete functionality for all phases:
+  1. Detection (Node.js version checking)
+  2. Node.js installation (macOS/Windows/Linux)
+  3. OpenClaw npm installation
+  4. Daemon onboarding
+  5. API key configuration (NEW - feat-022)
+  The configuration phase safely reads existing OpenClaw config, merges new API keys, and writes back with secure file permissions. Empty API keys are skipped, whitespace is trimmed, and existing non-API settings are preserved. The installer is now feature-complete for the core installation flow.
