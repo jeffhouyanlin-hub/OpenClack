@@ -19,7 +19,10 @@ jobs:
       - run: npm ci
       - run: npm run build
       - name: Verify entry point exists
-        run: test -f dist/main/main/main.js && echo "Entry point OK" || (echo "MISSING dist/main/main/main.js" && ls -R dist/main/ && exit 1)
+        run: |
+          echo "=== dist/main structure ==="
+          find dist/main -type f -name '*.js' | head -20
+          test -f dist/main/main/main.js && echo "OK: entry point found" || { echo "FAIL: dist/main/main/main.js missing"; exit 1; }
       - run: npx vitest run
 
   build-mac:
@@ -33,14 +36,37 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: Package macOS
-        run: npx electron-builder --mac dmg zip --arm64 --x64 --publish never
+      - name: Package macOS (arm64)
+        run: npx electron-builder --mac dmg zip --arm64 --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
-          name: openclack-mac
+          name: openclack-mac-arm64
+          path: |
+            release/*.dmg
+            release/*.zip
+
+  build-mac-x64:
+    needs: test
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Package macOS (x64)
+        run: npx electron-builder --mac dmg zip --x64 --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openclack-mac-x64
           path: |
             release/*.dmg
             release/*.zip
@@ -57,7 +83,10 @@ jobs:
       - run: npm ci
       - run: npm run build
       - name: Verify entry point
-        run: if (Test-Path "dist\main\main\main.js") { Write-Host "OK" } else { Get-ChildItem -Recurse dist\main\; exit 1 }
+        shell: powershell
+        run: |
+          Get-ChildItem -Recurse dist\main -Filter *.js | Select-Object FullName
+          if (Test-Path "dist\main\main\main.js") { Write-Host "OK: entry point found" } else { Write-Host "FAIL: entry point missing"; exit 1 }
       - name: Package Windows
         run: npx electron-builder --win nsis --x64 --publish never
         env:
@@ -95,7 +124,7 @@ jobs:
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build-mac, build-win, build-linux]
+    needs: [build-mac, build-mac-x64, build-win, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
