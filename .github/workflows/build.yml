@@ -23,14 +23,18 @@ jobs:
   build:
     needs: test
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: macos-latest
             platform: mac
+            args: ''
           - os: windows-latest
             platform: win
+            args: '--x64'
           - os: ubuntu-latest
             platform: linux
+            args: '--x64'
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -38,17 +42,18 @@ jobs:
         with:
           node-version: 20
           cache: npm
+
       - name: Install Linux dependencies
         if: matrix.platform == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libarchive-tools rpm
+          sudo apt-get install -y libarchive-tools rpm dpkg fakeroot
 
       - run: npm ci
       - run: npm run build
 
       - name: Package
-        run: npx electron-builder --${{ matrix.platform }} --publish never
+        run: npx electron-builder --${{ matrix.platform }} ${{ matrix.args }} --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
