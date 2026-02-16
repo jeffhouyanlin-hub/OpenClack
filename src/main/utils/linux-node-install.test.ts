@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   detectLinuxDistro,
   checkPackageManager,
@@ -285,11 +285,6 @@ describe('Linux Node.js Installation', () => {
     it('should log errors via progress callback', async () => {
       const progressCallback = vi.fn();
       await installNodeLinux(progressCallback);
-
-      // Check if any error-level logs were emitted
-      const errorLogs = progressCallback.mock.calls.filter(
-        call => call[1] === 'error'
-      );
 
       // If installation failed, there should be error logs
       if (progressCallback.mock.calls.length > 0) {
