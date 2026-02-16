@@ -13,6 +13,14 @@ import {
   LogEntry,
   InstallError,
 } from '../types/ipc';
+import {
+  sanitizeInstallConfig,
+  sanitizeInstallResult,
+  sanitizeSystemInfo,
+  sanitizeInstallProgress,
+  sanitizeLogEntry,
+  sanitizeInstallError,
+} from './utils/sanitization';
 
 /**
  * Register all IPC handlers
@@ -20,10 +28,13 @@ import {
  */
 export function registerIPCHandlers(_mainWindow: BrowserWindow): void {
   // Handler: Start installation
-  ipcMain.handle(IPC_CHANNELS.START_INSTALL, async (_event, config: InstallConfig): Promise<InstallResult> => {
+  ipcMain.handle(IPC_CHANNELS.START_INSTALL, async (_event, config: unknown): Promise<InstallResult> => {
     try {
-      // Validate config
-      if (!isValidInstallConfig(config)) {
+      // Sanitize incoming config from renderer
+      const sanitizedConfig = sanitizeInstallConfig(config);
+
+      // Validate sanitized config
+      if (!isValidInstallConfig(sanitizedConfig)) {
         throw new Error('Invalid installation configuration');
       }
 
@@ -35,7 +46,8 @@ export function registerIPCHandlers(_mainWindow: BrowserWindow): void {
         openclawVersion: '1.0.0',
       };
 
-      return result;
+      // Sanitize result before returning to renderer
+      return sanitizeInstallResult(result);
     } catch (error) {
       const installError: InstallError = {
         code: 'INSTALL_FAILED',
@@ -45,10 +57,13 @@ export function registerIPCHandlers(_mainWindow: BrowserWindow): void {
         recoverable: true,
       };
 
-      return {
+      const result = {
         success: false,
         error: installError,
       };
+
+      // Sanitize error result before returning
+      return sanitizeInstallResult(result);
     }
   });
 
@@ -68,7 +83,8 @@ export function registerIPCHandlers(_mainWindow: BrowserWindow): void {
       openclawInstalled: false, // TODO: Detect actual installation in future features
     };
 
-    return systemInfo;
+    // Sanitize system info before sending to renderer
+    return sanitizeSystemInfo(systemInfo);
   });
 
   // Handler: Launch OpenClaw
@@ -85,10 +101,13 @@ export function registerIPCHandlers(_mainWindow: BrowserWindow): void {
   });
 
   // Handler: Save configuration
-  ipcMain.handle(IPC_CHANNELS.SAVE_CONFIG, async (_event, config: InstallConfig): Promise<void> => {
+  ipcMain.handle(IPC_CHANNELS.SAVE_CONFIG, async (_event, config: unknown): Promise<void> => {
     try {
-      // Validate config
-      if (!isValidInstallConfig(config)) {
+      // Sanitize incoming config from renderer
+      const sanitizedConfig = sanitizeInstallConfig(config);
+
+      // Validate sanitized config
+      if (!isValidInstallConfig(sanitizedConfig)) {
         throw new Error('Invalid configuration');
       }
 
@@ -117,7 +136,9 @@ export function unregisterIPCHandlers(): void {
  */
 export function sendInstallProgress(mainWindow: BrowserWindow, progress: InstallProgress): void {
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send(IPC_CHANNELS.INSTALL_PROGRESS, progress);
+    // Sanitize progress data before sending to renderer
+    const sanitizedProgress = sanitizeInstallProgress(progress);
+    mainWindow.webContents.send(IPC_CHANNELS.INSTALL_PROGRESS, sanitizedProgress);
   }
 }
 
@@ -126,7 +147,9 @@ export function sendInstallProgress(mainWindow: BrowserWindow, progress: Install
  */
 export function sendInstallLog(mainWindow: BrowserWindow, log: LogEntry): void {
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send(IPC_CHANNELS.INSTALL_LOG, log);
+    // Sanitize log entry before sending to renderer
+    const sanitizedLog = sanitizeLogEntry(log);
+    mainWindow.webContents.send(IPC_CHANNELS.INSTALL_LOG, sanitizedLog);
   }
 }
 
@@ -135,7 +158,9 @@ export function sendInstallLog(mainWindow: BrowserWindow, log: LogEntry): void {
  */
 export function sendInstallError(mainWindow: BrowserWindow, error: InstallError): void {
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send(IPC_CHANNELS.INSTALL_ERROR, error);
+    // Sanitize error before sending to renderer
+    const sanitizedError = sanitizeInstallError(error);
+    mainWindow.webContents.send(IPC_CHANNELS.INSTALL_ERROR, sanitizedError);
   }
 }
 
@@ -144,7 +169,9 @@ export function sendInstallError(mainWindow: BrowserWindow, error: InstallError)
  */
 export function sendInstallComplete(mainWindow: BrowserWindow, result: InstallResult): void {
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send(IPC_CHANNELS.INSTALL_COMPLETE, result);
+    // Sanitize result before sending to renderer
+    const sanitizedResult = sanitizeInstallResult(result);
+    mainWindow.webContents.send(IPC_CHANNELS.INSTALL_COMPLETE, sanitizedResult);
   }
 }
 

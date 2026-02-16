@@ -883,7 +883,7 @@
         "Enable contextIsolation in all windows",
         "Sanitize all data passed through IPC"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {

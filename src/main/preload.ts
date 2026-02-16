@@ -1,6 +1,14 @@
 /**
  * Preload Script
  * Exposes secure IPC API to renderer process via contextBridge
+ *
+ * Security measures implemented:
+ * - Uses contextBridge exclusively (no direct ipcRenderer exposure)
+ * - Only exposes explicitly whitelisted IPC channels
+ * - Sanitizes all data in main process before sending to renderer
+ * - Validates all incoming data from renderer in main process
+ * - No access to Node.js APIs from renderer (nodeIntegration: false)
+ * - Context isolation enabled to prevent prototype pollution
  */
 
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
@@ -14,6 +22,14 @@ import {
   InstallError,
   WindowAPI,
 } from '../types/ipc';
+
+// Security: Verify contextIsolation and nodeIntegration are properly configured
+if (process.contextIsolated !== true) {
+  console.error('SECURITY WARNING: Context isolation is not enabled!');
+}
+
+// Security: Do NOT expose ipcRenderer directly to prevent arbitrary IPC usage
+// Only expose specific, validated methods through contextBridge
 
 // Expose secure API to renderer
 const electronAPI: WindowAPI = {
