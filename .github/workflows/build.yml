@@ -18,6 +18,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Verify entry point exists
+        run: test -f dist/main/main/main.js && echo "Entry point OK" || (echo "MISSING dist/main/main/main.js" && ls -R dist/main/ && exit 1)
       - run: npx vitest run
 
   build-mac:
@@ -31,13 +33,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: Package
+      - name: Package macOS
         run: npx electron-builder --mac dmg zip --arm64 --x64 --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: openclack-mac
           path: |
@@ -55,12 +56,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: Package
+      - name: Verify entry point
+        run: if (Test-Path "dist\main\main\main.js") { Write-Host "OK" } else { Get-ChildItem -Recurse dist\main\; exit 1 }
+      - name: Package Windows
         run: npx electron-builder --win nsis --x64 --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: openclack-win
           path: release/*.exe
@@ -74,18 +76,17 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - name: Install Linux dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libarchive-tools dpkg fakeroot
       - run: npm ci
       - run: npm run build
-      - name: Package
+      - name: Package Linux
         run: npx electron-builder --linux AppImage deb --x64 --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: openclack-linux
           path: |
@@ -99,14 +100,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2
         with:
           files: artifacts/*
           generate_release_notes: true
