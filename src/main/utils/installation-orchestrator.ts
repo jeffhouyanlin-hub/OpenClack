@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { detectNodeVersion, installNodeMacOS, installNodeWindows } from './installer';
+import { detectNodeVersion, installNodeMacOS, installNodeWindows, installNodeLinux } from './installer';
 import { platform } from 'os';
 import type { InstallConfig, InstallProgress, LogEntry, InstallError, InstallResult } from '../../types/ipc';
 
@@ -169,9 +169,22 @@ export class InstallationOrchestrator extends EventEmitter {
       this.emitLog('info', `Node.js ${installResult.version} installed successfully via ${installResult.method}`);
       this.emitProgress(30, 'Node.js installation complete');
     } else if (os === 'linux') {
-      // Linux installation - will be implemented in feat-017
-      this.emitLog('warning', 'Linux Node.js installation not yet implemented (feat-017)');
-      this.emitProgress(30, 'Node.js installation skipped (not yet implemented)');
+      // Linux installation
+      const installResult = await installNodeLinux((message, level) => {
+        this.emitLog(level, message);
+      });
+
+      if (installResult.cancelled) {
+        this.cancelled = true;
+        return;
+      }
+
+      if (!installResult.success) {
+        throw new Error(installResult.error || 'Node.js installation failed');
+      }
+
+      this.emitLog('info', `Node.js ${installResult.version} installed successfully via ${installResult.method}`);
+      this.emitProgress(30, 'Node.js installation complete');
     } else {
       throw new Error(`Unsupported platform: ${os}`);
     }

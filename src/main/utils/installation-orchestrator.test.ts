@@ -25,6 +25,14 @@ describe('InstallationOrchestrator', () => {
       version: '22.12.0',
       method: 'msi',
     });
+
+    // Default mock for installNodeLinux
+    vi.mocked(installer.installNodeLinux).mockResolvedValue({
+      success: true,
+      cancelled: false,
+      version: '22.12.0',
+      method: 'apt',
+    });
   });
 
   afterEach(() => {

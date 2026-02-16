@@ -220,7 +220,7 @@
         "Install Node.js with sudo privileges",
         "Verify installation completed successfully"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {

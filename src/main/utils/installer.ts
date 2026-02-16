@@ -1008,3 +1008,430 @@ export async function installNodeWindows(
     };
   }
 }
+
+/**
+ * Detects the Linux distribution
+ * @returns Promise resolving to 'debian', 'fedora', or 'unknown'
+ */
+export async function detectLinuxDistro(): Promise<'debian' | 'fedora' | 'unknown'> {
+  const fs = await import('fs');
+
+  try {
+    // Check for Debian-based distributions (Ubuntu, Debian, Linux Mint, etc.)
+    // These systems have /etc/debian_version
+    if (fs.existsSync('/etc/debian_version')) {
+      return 'debian';
+    }
+
+    // Check for Red Hat-based distributions (Fedora, RHEL, CentOS, etc.)
+    // These systems have /etc/redhat-release or /etc/fedora-release
+    if (fs.existsSync('/etc/redhat-release') || fs.existsSync('/etc/fedora-release')) {
+      return 'fedora';
+    }
+
+    // Also check /etc/os-release for more modern distributions
+    if (fs.existsSync('/etc/os-release')) {
+      const osRelease = fs.readFileSync('/etc/os-release', 'utf-8');
+      if (osRelease.includes('debian') || osRelease.includes('ubuntu')) {
+        return 'debian';
+      }
+      if (osRelease.includes('fedora') || osRelease.includes('rhel') || osRelease.includes('centos')) {
+        return 'fedora';
+      }
+    }
+
+    return 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
+/**
+ * Checks if a package manager command is available
+ * @param command - The command to check (e.g., 'apt', 'dnf')
+ * @returns Promise resolving to true if available
+ */
+export async function checkPackageManager(command: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    try {
+      const child = spawn('which', [command]);
+      let stdout = '';
+
+      child.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      child.on('close', (code) => {
+        resolve(code === 0 && stdout.trim().length > 0);
+      });
+
+      child.on('error', () => {
+        resolve(false);
+      });
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
+/**
+ * Installs Node.js on Debian/Ubuntu using apt
+ * @param onProgress - Optional callback for progress updates
+ * @returns Promise resolving to NodeInstallResult
+ */
+export async function installNodeViaApt(
+  onProgress?: InstallProgressCallback
+): Promise<NodeInstallResult> {
+  try {
+    onProgress?.('Installing Node.js via apt...', 'info');
+
+    // NodeSource provides Node.js v22.x for Debian/Ubuntu
+    // We need to add the NodeSource repository first
+    onProgress?.('Adding NodeSource repository...', 'info');
+
+    // Download and run the NodeSource setup script with elevated privileges
+    // This is the official method recommended by NodeSource
+    const setupResult = await executeWithPrivileges(
+      'bash',
+      ['-c', 'curl -fsSL https://deb.nodesource.com/setup_22.x | bash -'],
+      { message: 'OpenClack needs to add the NodeSource repository.' }
+    );
+
+    if (setupResult.cancelled) {
+      onProgress?.('Repository setup cancelled by user', 'warning');
+      return {
+        success: false,
+        cancelled: true,
+        error: 'User cancelled repository setup',
+        method: 'apt',
+      };
+    }
+
+    if (!setupResult.success) {
+      onProgress?.(`Repository setup failed: ${setupResult.error}`, 'error');
+      return {
+        success: false,
+        cancelled: false,
+        error: setupResult.error || 'Failed to add NodeSource repository',
+        method: 'apt',
+      };
+    }
+
+    onProgress?.('Installing Node.js package...', 'info');
+
+    // Now install Node.js using apt-get
+    const installResult = await executeWithPrivileges(
+      'apt-get',
+      ['install', '-y', 'nodejs'],
+      { message: 'OpenClack needs to install Node.js.' }
+    );
+
+    if (installResult.cancelled) {
+      onProgress?.('Installation cancelled by user', 'warning');
+      return {
+        success: false,
+        cancelled: true,
+        error: 'User cancelled installation',
+        method: 'apt',
+      };
+    }
+
+    if (!installResult.success) {
+      onProgress?.(`Installation failed: ${installResult.error}`, 'error');
+      return {
+        success: false,
+        cancelled: false,
+        error: installResult.error || 'apt-get install failed',
+        method: 'apt',
+      };
+    }
+
+    // Verify installation
+    onProgress?.('Verifying Node.js installation...', 'info');
+    const versionResult = await detectNodeVersion();
+
+    if (!versionResult.installed || !versionResult.meetsRequirement) {
+      onProgress?.('Node.js installation verification failed', 'error');
+      return {
+        success: false,
+        cancelled: false,
+        error: 'Installation completed but Node.js version verification failed',
+        method: 'apt',
+      };
+    }
+
+    onProgress?.(`Node.js ${versionResult.version} installed successfully`, 'info');
+    return {
+      success: true,
+      cancelled: false,
+      version: versionResult.version || undefined,
+      method: 'apt',
+    };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : 'Unknown error';
+    onProgress?.(error, 'error');
+    return {
+      success: false,
+      cancelled: false,
+      error,
+      method: 'apt',
+    };
+  }
+}
+
+/**
+ * Installs Node.js on Fedora/RHEL using dnf or yum
+ * @param onProgress - Optional callback for progress updates
+ * @returns Promise resolving to NodeInstallResult
+ */
+export async function installNodeViaDnf(
+  onProgress?: InstallProgressCallback
+): Promise<NodeInstallResult> {
+  try {
+    // Check if dnf is available (newer Fedora/RHEL)
+    const hasDnf = await checkPackageManager('dnf');
+    const packageManager = hasDnf ? 'dnf' : 'yum';
+
+    onProgress?.(`Installing Node.js via ${packageManager}...`, 'info');
+
+    // NodeSource provides Node.js v22.x for Fedora/RHEL
+    // We need to add the NodeSource repository first
+    onProgress?.('Adding NodeSource repository...', 'info');
+
+    // Download and run the NodeSource setup script with elevated privileges
+    const setupResult = await executeWithPrivileges(
+      'bash',
+      ['-c', 'curl -fsSL https://rpm.nodesource.com/setup_22.x | bash -'],
+      { message: 'OpenClack needs to add the NodeSource repository.' }
+    );
+
+    if (setupResult.cancelled) {
+      onProgress?.('Repository setup cancelled by user', 'warning');
+      return {
+        success: false,
+        cancelled: true,
+        error: 'User cancelled repository setup',
+        method: packageManager,
+      };
+    }
+
+    if (!setupResult.success) {
+      onProgress?.(`Repository setup failed: ${setupResult.error}`, 'error');
+      return {
+        success: false,
+        cancelled: false,
+        error: setupResult.error || 'Failed to add NodeSource repository',
+        method: packageManager,
+      };
+    }
+
+    onProgress?.('Installing Node.js package...', 'info');
+
+    // Now install Node.js using dnf/yum
+    const installResult = await executeWithPrivileges(
+      packageManager,
+      ['install', '-y', 'nodejs'],
+      { message: 'OpenClack needs to install Node.js.' }
+    );
+
+    if (installResult.cancelled) {
+      onProgress?.('Installation cancelled by user', 'warning');
+      return {
+        success: false,
+        cancelled: true,
+        error: 'User cancelled installation',
+        method: packageManager,
+      };
+    }
+
+    if (!installResult.success) {
+      onProgress?.(`Installation failed: ${installResult.error}`, 'error');
+      return {
+        success: false,
+        cancelled: false,
+        error: installResult.error || `${packageManager} install failed`,
+        method: packageManager,
+      };
+    }
+
+    // Verify installation
+    onProgress?.('Verifying Node.js installation...', 'info');
+    const versionResult = await detectNodeVersion();
+
+    if (!versionResult.installed || !versionResult.meetsRequirement) {
+      onProgress?.('Node.js installation verification failed', 'error');
+      return {
+        success: false,
+        cancelled: false,
+        error: 'Installation completed but Node.js version verification failed',
+        method: packageManager,
+      };
+    }
+
+    onProgress?.(`Node.js ${versionResult.version} installed successfully`, 'info');
+    return {
+      success: true,
+      cancelled: false,
+      version: versionResult.version || undefined,
+      method: packageManager,
+    };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : 'Unknown error';
+    onProgress?.(error, 'error');
+    return {
+      success: false,
+      cancelled: false,
+      error,
+      method: 'dnf/yum',
+    };
+  }
+}
+
+/**
+ * Installs Node.js on Linux by downloading and extracting the official binary tarball
+ * This is a fallback method that works on any Linux distribution
+ * @param onProgress - Optional callback for progress updates
+ * @returns Promise resolving to NodeInstallResult
+ */
+export async function installNodeDirectLinux(
+  onProgress?: InstallProgressCallback
+): Promise<NodeInstallResult> {
+  try {
+    const path = await import('path');
+    const { tmpdir } = await import('os');
+    const fs = await import('fs');
+
+    // Determine architecture
+    const arch = process.arch === 'x64' ? 'x64' : process.arch === 'arm64' ? 'arm64' : 'x64';
+
+    // Download URL for the latest v22.x Linux binary
+    const downloadUrl = `https://nodejs.org/dist/latest-v22.x/node-v22-linux-${arch}.tar.gz`;
+    const tmpDir = tmpdir();
+    const tarballPath = path.join(tmpDir, `node-${Date.now()}.tar.gz`);
+
+    onProgress?.(`Downloading Node.js binary for Linux ${arch}...`, 'info');
+
+    // Download the tarball
+    await downloadFile(downloadUrl, tarballPath);
+
+    onProgress?.('Download complete. Installing Node.js...', 'info');
+
+    // Extract to /usr/local using tar with elevated privileges
+    // This installs Node.js system-wide
+    const extractResult = await executeWithPrivileges(
+      'tar',
+      ['-xzf', tarballPath, '-C', '/usr/local', '--strip-components=1'],
+      { message: 'OpenClack needs to install Node.js to /usr/local.' }
+    );
+
+    // Clean up tarball
+    try {
+      fs.unlinkSync(tarballPath);
+    } catch {
+      // Ignore cleanup errors
+    }
+
+    if (extractResult.cancelled) {
+      onProgress?.('Installation cancelled by user', 'warning');
+      return {
+        success: false,
+        cancelled: true,
+        error: 'User cancelled installation',
+        method: 'binary',
+      };
+    }
+
+    if (!extractResult.success) {
+      onProgress?.(`Installation failed: ${extractResult.error}`, 'error');
+      return {
+        success: false,
+        cancelled: false,
+        error: extractResult.error || 'Failed to extract Node.js binary',
+        method: 'binary',
+      };
+    }
+
+    // Verify installation
+    onProgress?.('Verifying Node.js installation...', 'info');
+    const versionResult = await detectNodeVersion();
+
+    if (!versionResult.installed || !versionResult.meetsRequirement) {
+      onProgress?.('Node.js installation verification failed', 'error');
+      return {
+        success: false,
+        cancelled: false,
+        error: 'Installation completed but Node.js version verification failed',
+        method: 'binary',
+      };
+    }
+
+    onProgress?.(`Node.js ${versionResult.version} installed successfully`, 'info');
+    return {
+      success: true,
+      cancelled: false,
+      version: versionResult.version || undefined,
+      method: 'binary',
+    };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : 'Unknown error';
+    onProgress?.(error, 'error');
+    return {
+      success: false,
+      cancelled: false,
+      error,
+      method: 'binary',
+    };
+  }
+}
+
+/**
+ * Installs Node.js on Linux
+ * Detects the distribution and uses the appropriate package manager
+ * Falls back to direct binary installation if package manager fails
+ *
+ * @param onProgress - Optional callback for progress updates
+ * @returns Promise resolving to NodeInstallResult
+ */
+export async function installNodeLinux(
+  onProgress?: InstallProgressCallback
+): Promise<NodeInstallResult> {
+  if (platform() !== 'linux') {
+    onProgress?.('This function is only supported on Linux', 'error');
+    return {
+      success: false,
+      cancelled: false,
+      error: 'This function is only supported on Linux',
+      method: 'unsupported',
+    };
+  }
+
+  onProgress?.('Detecting Linux distribution...', 'info');
+  const distro = await detectLinuxDistro();
+
+  if (distro === 'debian') {
+    onProgress?.('Debian/Ubuntu detected, using apt package manager', 'info');
+    const result = await installNodeViaApt(onProgress);
+
+    // If package manager installation fails (but not cancelled), try binary fallback
+    if (!result.success && !result.cancelled) {
+      onProgress?.('Package manager installation failed, trying binary installation', 'warning');
+      return installNodeDirectLinux(onProgress);
+    }
+
+    return result;
+  } else if (distro === 'fedora') {
+    onProgress?.('Fedora/RHEL detected, using dnf/yum package manager', 'info');
+    const result = await installNodeViaDnf(onProgress);
+
+    // If package manager installation fails (but not cancelled), try binary fallback
+    if (!result.success && !result.cancelled) {
+      onProgress?.('Package manager installation failed, trying binary installation', 'warning');
+      return installNodeDirectLinux(onProgress);
+    }
+
+    return result;
+  } else {
+    onProgress?.('Unknown distribution, using direct binary installation', 'info');
+    return installNodeDirectLinux(onProgress);
+  }
+}
