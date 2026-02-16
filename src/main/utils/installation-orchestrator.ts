@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { detectNodeVersion, installNodeMacOS, installNodeWindows, installNodeLinux } from './installer';
+import { detectNodeVersion, installNodeMacOS, installNodeWindows, installNodeLinux, installOpenclaw } from './installer';
 import { platform } from 'os';
 import type { InstallConfig, InstallProgress, LogEntry, InstallError, InstallResult } from '../../types/ipc';
 
@@ -198,10 +198,21 @@ export class InstallationOrchestrator extends EventEmitter {
     this.emitProgress(35, 'Installing OpenClaw...');
     this.emitLog('info', 'Starting OpenClaw installation');
 
-    // Placeholder for npm install -g openclaw@latest
-    // Will be implemented in feat-020
-    this.emitLog('info', 'OpenClaw installation placeholder - will be implemented in feat-020');
+    // Install OpenClaw globally via npm
+    const installResult = await installOpenclaw((message, level) => {
+      this.emitLog(level, message);
+    });
 
+    if (installResult.cancelled) {
+      this.cancelled = true;
+      return;
+    }
+
+    if (!installResult.success) {
+      throw new Error(installResult.error || 'OpenClaw installation failed');
+    }
+
+    this.emitLog('info', `OpenClaw ${installResult.version} installed successfully`);
     this.emitProgress(60, 'OpenClaw installation complete');
   }
 

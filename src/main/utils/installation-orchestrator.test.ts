@@ -33,6 +33,13 @@ describe('InstallationOrchestrator', () => {
       version: '22.12.0',
       method: 'apt',
     });
+
+    // Default mock for installOpenclaw
+    vi.mocked(installer.installOpenclaw).mockResolvedValue({
+      success: true,
+      cancelled: false,
+      version: '1.0.0',
+    });
   });
 
   afterEach(() => {

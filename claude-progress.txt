@@ -723,3 +723,39 @@
   6. Verify the installation completed successfully
   7. Handle user cancellation gracefully
   The three-tier installation strategy (distro-specific package manager → fallback to binary → error) ensures maximum compatibility across all Linux distributions. The NodeSource repositories provide official Node.js v22.x packages for Debian/Ubuntu and Fedora/RHEL. The binary fallback works on any Linux distribution including Alpine, Arch, and others.
+
+### Session 23 — feat-020: Implement OpenClaw npm package installation
+- Created comprehensive OpenClaw installation functionality in src/main/utils/installer.ts:
+  - detectOpenClawVersion(): Detects if OpenClaw is installed by running `openclaw --version`
+  - installOpenclaw(): Installs OpenClaw globally using `npm install -g openclaw@latest`
+    - Executes npm with elevated privileges via executeWithPrivileges()
+    - Streams npm output (stdout/stderr) to progress callback for real-time UI updates
+    - Parses npm output to classify messages as info, warning, or error based on content
+    - Verifies installation by calling detectOpenClawVersion() after completion
+    - Handles user cancellation gracefully
+    - Returns detailed OpenClawInstallResult with success, version, error, and cancelled fields
+- Integrated installOpenclaw into InstallationOrchestrator:
+  - Updated executeOpenClawInstallPhase() to call installOpenclaw() instead of placeholder
+  - Added import for installOpenclaw from installer module
+  - Streams progress via emitLog() callback for real-time renderer updates
+  - Handles cancellation by setting orchestrator's cancelled flag
+  - Throws descriptive errors on installation failure
+- Created comprehensive test suite (src/main/utils/openclaw-install.test.ts) with 30 tests covering:
+  - detectOpenClawVersion: 6 tests (function existence, return types, version formats, null handling)
+  - installOpenclaw: 13 tests (successful installation, callback handling, cancellation, errors, verification, result structure)
+  - Function Signatures: 3 tests (parameter validation, optional callback)
+  - Return Types: 4 tests (type validation, optional fields)
+  - Edge Cases: 4 tests (empty versions, malformed data, missing fields)
+- Updated installation-orchestrator.test.ts to mock installOpenclaw with default successful result
+- Current test status: 641/641 passing, 6 skipped (30 new tests for feat-020)
+- All TypeScript compilation passes for both main and renderer
+- Build process completes successfully
+- Features.json updated: feat-020 marked as passing
+- Notes for future sessions: OpenClaw installation is fully implemented and integrated. The InstallationOrchestrator now has complete npm package installation logic. When the orchestrator reaches the INSTALLING_OPENCLAW phase, it will:
+  1. Execute npm install -g openclaw@latest with elevated privileges
+  2. Stream npm output to renderer for real-time progress display
+  3. Parse output to detect warnings and errors
+  4. Verify OpenClaw command is available after installation
+  5. Handle user cancellation gracefully
+  6. Return detailed result with version information
+  Future features (feat-021 for daemon onboarding and feat-022 for API key configuration) will complete the installation pipeline.

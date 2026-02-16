@@ -1435,3 +1435,164 @@ export async function installNodeLinux(
     return installNodeDirectLinux(onProgress);
   }
 }
+
+/**
+ * Result of OpenClaw installation
+ */
+export interface OpenClawInstallResult {
+  /** Whether installation succeeded */
+  success: boolean;
+  /** Installed OpenClaw version, if successful */
+  version?: string;
+  /** Error message if installation failed */
+  error?: string;
+  /** Whether the user cancelled the installation */
+  cancelled: boolean;
+}
+
+/**
+ * Detects if OpenClaw is installed globally
+ * @returns Promise resolving to version string or null if not installed
+ */
+export async function detectOpenClawVersion(): Promise<string | null> {
+  return new Promise((resolve) => {
+    try {
+      // SECURITY: Hard-coded command and arguments, no user input involved
+      const child = spawn('openclaw', ['--version']);
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      child.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      child.on('close', (code) => {
+        if (code !== 0) {
+          resolve(null);
+          return;
+        }
+
+        // Parse version from output
+        // Expected format: "openclaw version X.Y.Z" or just "X.Y.Z"
+        const version = stdout.trim();
+        const versionMatch = version.match(/(\d+\.\d+\.\d+)/);
+        resolve(versionMatch ? versionMatch[1] : version);
+      });
+
+      child.on('error', () => {
+        // Command not found
+        resolve(null);
+      });
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+/**
+ * Installs OpenClaw globally using npm
+ *
+ * SECURITY: Uses spawn() with array arguments to prevent command injection.
+ * All arguments are hard-coded or validated through sanitization.
+ *
+ * @param onProgress - Optional callback for progress updates and log streaming
+ * @returns Promise resolving to OpenClawInstallResult
+ */
+export async function installOpenclaw(
+  onProgress?: InstallProgressCallback
+): Promise<OpenClawInstallResult> {
+  try {
+    onProgress?.('Installing OpenClaw globally via npm...', 'info');
+    onProgress?.('This may take a few minutes...', 'info');
+
+    // Execute npm install -g openclaw@latest with elevated privileges
+    // SECURITY: All arguments are hard-coded strings, no user input
+    const result = await executeWithPrivileges(
+      'npm',
+      ['install', '-g', 'openclaw@latest'],
+      { message: 'OpenClack needs to install OpenClaw globally.' }
+    );
+
+    // Stream npm output to progress callback
+    if (result.stdout) {
+      const lines = result.stdout.split('\n').filter(line => line.trim());
+      for (const line of lines) {
+        // npm outputs different types of messages
+        // Warnings typically start with 'npm WARN' or 'WARN'
+        // Errors typically start with 'npm ERR!' or 'ERR!'
+        if (line.includes('WARN') || line.includes('warn')) {
+          onProgress?.(line, 'warning');
+        } else if (line.includes('ERR') || line.includes('error')) {
+          onProgress?.(line, 'error');
+        } else {
+          onProgress?.(line, 'info');
+        }
+      }
+    }
+
+    if (result.stderr) {
+      const lines = result.stderr.split('\n').filter(line => line.trim());
+      for (const line of lines) {
+        // stderr might contain warnings or errors
+        if (line.includes('WARN') || line.includes('warn')) {
+          onProgress?.(line, 'warning');
+        } else if (line.includes('ERR') || line.includes('error')) {
+          onProgress?.(line, 'error');
+        } else {
+          // Some npm output goes to stderr but isn't an error
+          onProgress?.(line, 'info');
+        }
+      }
+    }
+
+    if (result.cancelled) {
+      onProgress?.('Installation cancelled by user', 'warning');
+      return {
+        success: false,
+        cancelled: true,
+        error: 'User cancelled installation',
+      };
+    }
+
+    if (!result.success) {
+      onProgress?.(`npm install failed: ${result.error}`, 'error');
+      return {
+        success: false,
+        cancelled: false,
+        error: result.error || 'npm install command failed',
+      };
+    }
+
+    // Verify installation by checking openclaw command
+    onProgress?.('Verifying OpenClaw installation...', 'info');
+    const version = await detectOpenClawVersion();
+
+    if (!version) {
+      onProgress?.('OpenClaw installation verification failed', 'error');
+      return {
+        success: false,
+        cancelled: false,
+        error: 'Installation completed but openclaw command not found in PATH',
+      };
+    }
+
+    onProgress?.(`OpenClaw ${version} installed successfully`, 'info');
+    return {
+      success: true,
+      cancelled: false,
+      version,
+    };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : 'Unknown error';
+    onProgress?.(error, 'error');
+    return {
+      success: false,
+      cancelled: false,
+      error,
+    };
+  }
+}
