@@ -11,7 +11,7 @@ export interface InstallErrorInfo {
   retryable: boolean;
 }
 
-export function categorizeError(error: Error | string, phase?: string): InstallErrorInfo {
+export function categorizeError(error: Error | string, _phase?: string): InstallErrorInfo {
   const msg = typeof error === 'string' ? error : error.message;
   const lower = msg.toLowerCase();
 

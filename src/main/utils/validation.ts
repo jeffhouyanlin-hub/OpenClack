@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import { detectNodeVersion, detectOpenClawVersion, compareVersions, MIN_NODE_VERSION } from './installer';
+import { detectNodeVersion, detectOpenClawVersion, MIN_NODE_VERSION } from './installer';
 
 export interface APIKeyValidation {
   valid: boolean;
