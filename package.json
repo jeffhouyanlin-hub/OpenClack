@@ -29,7 +29,10 @@
     "openclaw",
     "installer"
   ],
-  "author": "OpenClack Team",
+  "author": {
+    "name": "OpenClack Team",
+    "email": "openclack@users.noreply.github.com"
+  },
   "license": "MIT",
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
