@@ -5,6 +5,7 @@
     "moduleResolution": "node",
     "lib": ["ES2022"],
     "outDir": "dist/main",
+    "rootDir": "src",
     "noEmit": false,
     "types": ["node"]
   },

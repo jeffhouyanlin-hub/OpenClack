@@ -34,7 +34,7 @@ describe('electron-builder configuration', () => {
     });
 
     it('should have correct main entry point in extraMetadata', () => {
-      expect(buildConfig.extraMetadata.main).toBe('dist/main/main.js');
+      expect(buildConfig.extraMetadata.main).toBe('dist/main/main/main.js');
     });
   });
 

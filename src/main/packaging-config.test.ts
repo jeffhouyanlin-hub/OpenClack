@@ -45,7 +45,7 @@ describe('Packaging Configuration (feat-036 to feat-045)', () => {
     });
 
     it('should have correct main entry point in extraMetadata', () => {
-      expect(buildConfig.extraMetadata.main).toBe('dist/main/main.js');
+      expect(buildConfig.extraMetadata.main).toBe('dist/main/main/main.js');
     });
   });
 

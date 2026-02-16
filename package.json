@@ -2,7 +2,7 @@
   "name": "openclack",
   "version": "1.0.0",
   "description": "Silent installer GUI for OpenClaw",
-  "main": "dist/main/main.js",
+  "main": "dist/main/main/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\" \"npm run dev:electron\"",
     "dev:main": "tsc -p tsconfig.main.json --watch",
@@ -71,7 +71,7 @@
       "package.json"
     ],
     "extraMetadata": {
-      "main": "dist/main/main.js"
+      "main": "dist/main/main/main.js"
     },
     "mac": {
       "category": "public.app-category.developer-tools",
