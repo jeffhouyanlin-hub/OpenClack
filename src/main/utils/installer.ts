@@ -1596,3 +1596,137 @@ export async function installOpenclaw(
     };
   }
 }
+
+/**
+ * Result of OpenClaw daemon onboarding
+ */
+export interface OnboardResult {
+  /** Whether onboarding was successful */
+  success: boolean;
+  /** Whether the operation was cancelled by the user */
+  cancelled: boolean;
+  /** Error message if onboarding failed */
+  error?: string;
+}
+
+/**
+ * Runs OpenClaw daemon onboarding
+ *
+ * Executes `openclaw onboard --install-daemon` with non-interactive flags
+ * to set up the OpenClaw daemon without requiring user interaction.
+ *
+ * SECURITY NOTES:
+ * ===============
+ * This function executes the openclaw command with hard-coded arguments.
+ * - Uses executeWithPrivileges() which enforces spawn() with array arguments
+ * - API keys in config are sanitized before being passed as command arguments
+ * - No user input is concatenated into command strings
+ * - All arguments are validated to be strings only
+ *
+ * @param config - Optional installation configuration with API keys
+ * @param onProgress - Optional callback for progress updates and log streaming
+ * @returns Promise resolving to OnboardResult
+ */
+export async function onboardOpenclaw(
+  config?: { apiKeys?: { anthropic?: string; openai?: string; [key: string]: string | undefined } },
+  onProgress?: InstallProgressCallback
+): Promise<OnboardResult> {
+  try {
+    onProgress?.('Running OpenClaw daemon onboarding...', 'info');
+    onProgress?.('Setting up OpenClaw daemon service...', 'info');
+
+    // Build command arguments for non-interactive onboarding
+    const args = ['onboard', '--install-daemon', '--non-interactive'];
+
+    // Add API keys as command arguments if provided
+    // SECURITY: API keys are sanitized by the caller (ipc-handlers.ts) before reaching here
+    // We validate they are strings to prevent injection
+    if (config?.apiKeys) {
+      if (config.apiKeys.anthropic && typeof config.apiKeys.anthropic === 'string') {
+        args.push('--anthropic-key', config.apiKeys.anthropic);
+      }
+      if (config.apiKeys.openai && typeof config.apiKeys.openai === 'string') {
+        args.push('--openai-key', config.apiKeys.openai);
+      }
+
+      // Add other API keys if present
+      for (const [provider, key] of Object.entries(config.apiKeys)) {
+        if (provider !== 'anthropic' && provider !== 'openai' && key && typeof key === 'string') {
+          args.push(`--${provider}-key`, key);
+        }
+      }
+    }
+
+    onProgress?.(`Executing: openclaw ${args.join(' ')}`, 'info');
+
+    // Execute openclaw onboard command with elevated privileges
+    // SECURITY: All arguments are validated strings, no shell interpolation
+    const result = await executeWithPrivileges(
+      'openclaw',
+      args,
+      { message: 'OpenClack needs to configure the OpenClaw daemon.' }
+    );
+
+    // Stream openclaw output to progress callback
+    if (result.stdout) {
+      const lines = result.stdout.split('\n').filter(line => line.trim());
+      for (const line of lines) {
+        // Parse output for warnings and errors
+        if (line.toLowerCase().includes('warn') || line.toLowerCase().includes('warning')) {
+          onProgress?.(line, 'warning');
+        } else if (line.toLowerCase().includes('err') || line.toLowerCase().includes('error')) {
+          onProgress?.(line, 'error');
+        } else {
+          onProgress?.(line, 'info');
+        }
+      }
+    }
+
+    if (result.stderr) {
+      const lines = result.stderr.split('\n').filter(line => line.trim());
+      for (const line of lines) {
+        // stderr might contain warnings or errors
+        if (line.toLowerCase().includes('warn') || line.toLowerCase().includes('warning')) {
+          onProgress?.(line, 'warning');
+        } else if (line.toLowerCase().includes('err') || line.toLowerCase().includes('error')) {
+          onProgress?.(line, 'error');
+        } else {
+          // Some CLI tools output progress to stderr
+          onProgress?.(line, 'info');
+        }
+      }
+    }
+
+    if (result.cancelled) {
+      onProgress?.('Daemon onboarding cancelled by user', 'warning');
+      return {
+        success: false,
+        cancelled: true,
+        error: 'User cancelled onboarding',
+      };
+    }
+
+    if (!result.success) {
+      onProgress?.(`Daemon onboarding failed: ${result.error}`, 'error');
+      return {
+        success: false,
+        cancelled: false,
+        error: result.error || 'openclaw onboard command failed',
+      };
+    }
+
+    onProgress?.('OpenClaw daemon configured successfully', 'info');
+    return {
+      success: true,
+      cancelled: false,
+    };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : 'Unknown error';
+    onProgress?.(error, 'error');
+    return {
+      success: false,
+      cancelled: false,
+      error,
+    };
+  }
+}

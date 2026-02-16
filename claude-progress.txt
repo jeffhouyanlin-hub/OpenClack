@@ -759,3 +759,50 @@
   5. Handle user cancellation gracefully
   6. Return detailed result with version information
   Future features (feat-021 for daemon onboarding and feat-022 for API key configuration) will complete the installation pipeline.
+
+### Session 24 — feat-021: Implement OpenClaw daemon onboarding
+- Created comprehensive onboardOpenclaw() function in src/main/utils/installer.ts:
+  - Executes `openclaw onboard --install-daemon --non-interactive` with elevated privileges
+  - Accepts optional InstallConfig with API keys that are passed as command arguments
+  - Uses executeWithPrivileges() to handle platform-specific privilege elevation
+  - Builds command arguments dynamically based on provided API keys (anthropic, openai, custom providers)
+  - Validates all API keys are strings to prevent injection attacks
+  - Streams stdout/stderr to progress callback for real-time UI updates
+  - Parses output to classify messages as info, warning, or error
+  - Handles user cancellation gracefully (returns cancelled: true)
+  - Returns OnboardResult interface with success/cancelled/error fields
+- Exported new OnboardResult interface for type safety
+- Integrated onboardOpenclaw into InstallationOrchestrator:
+  - Updated import to include onboardOpenclaw from installer module
+  - Replaced placeholder implementation in executeOnboardingPhase()
+  - Calls onboardOpenclaw with config.apiKeys and progress callback streaming
+  - Handles cancellation by setting orchestrator's cancelled flag
+  - Throws descriptive errors on onboarding failure
+  - Properly integrates with sequential phase execution pipeline
+- Created comprehensive test suite (src/main/utils/onboard-openclaw.test.ts) with 27 tests:
+  - Function definition and signature verification (3 tests)
+  - Function signature and return types (5 tests)
+  - Progress callback functionality (3 tests)
+  - API key handling (Anthropic, OpenAI, multiple keys, undefined, invalid types) (5 tests)
+  - Result structure validation (2 tests)
+  - Integration and exports (2 tests)
+  - Edge cases (very long keys, special characters, empty strings, whitespace, unknown providers) (5 tests)
+  - Security validation (non-string keys, null keys) (2 tests)
+- Updated installation-orchestrator.test.ts to mock onboardOpenclaw with default successful result
+- Current test status: 668/668 passing, 6 skipped (27 new tests for feat-021)
+- All TypeScript compilation passes for both main and renderer
+- Build process completes successfully
+- Features.json updated: feat-021 marked as passing
+- Security considerations:
+  - All command arguments are passed as separate array elements to executeWithPrivileges()
+  - API keys are validated to be strings before passing to command
+  - No shell interpolation or string concatenation with user input
+  - Uses existing privilege elevation infrastructure with proper UAC/sudo prompts
+  - API keys are sanitized by ipc-handlers before reaching onboardOpenclaw
+- Notes for future sessions: OpenClaw daemon onboarding is fully implemented and integrated. The InstallationOrchestrator now has complete onboarding logic that:
+  1. Executes openclaw onboard command with non-interactive flags
+  2. Passes API keys as command-line arguments if provided
+  3. Streams real-time output to renderer for progress display
+  4. Handles user cancellation gracefully
+  5. Verifies onboarding completed successfully
+  The onboarding phase is now operational and will be executed after OpenClaw npm installation (feat-020). Future feature feat-022 will add direct API key file configuration as a fallback mechanism.

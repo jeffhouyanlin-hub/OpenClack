@@ -272,7 +272,7 @@
         "Stream onboarding output to renderer",
         "Verify daemon installation completed successfully"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {

@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { detectNodeVersion, installNodeMacOS, installNodeWindows, installNodeLinux, installOpenclaw } from './installer';
+import { detectNodeVersion, installNodeMacOS, installNodeWindows, installNodeLinux, installOpenclaw, onboardOpenclaw } from './installer';
 import { platform } from 'os';
 import type { InstallConfig, InstallProgress, LogEntry, InstallError, InstallResult } from '../../types/ipc';
 
@@ -224,10 +224,24 @@ export class InstallationOrchestrator extends EventEmitter {
     this.emitProgress(65, 'Setting up OpenClaw daemon...');
     this.emitLog('info', 'Starting OpenClaw daemon onboarding');
 
-    // Placeholder for openclaw onboard --install-daemon
-    // Will be implemented in feat-021
-    this.emitLog('info', 'OpenClaw onboarding placeholder - will be implemented in feat-021');
+    // Execute openclaw onboard --install-daemon with non-interactive flags
+    const onboardResult = await onboardOpenclaw(
+      { apiKeys: this.config.apiKeys },
+      (message, level) => {
+        this.emitLog(level, message);
+      }
+    );
 
+    if (onboardResult.cancelled) {
+      this.cancelled = true;
+      return;
+    }
+
+    if (!onboardResult.success) {
+      throw new Error(onboardResult.error || 'OpenClaw daemon onboarding failed');
+    }
+
+    this.emitLog('info', 'OpenClaw daemon configured successfully');
     this.emitProgress(85, 'OpenClaw daemon setup complete');
   }
 

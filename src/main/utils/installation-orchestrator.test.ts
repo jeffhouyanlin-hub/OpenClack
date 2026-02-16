@@ -40,6 +40,12 @@ describe('InstallationOrchestrator', () => {
       cancelled: false,
       version: '1.0.0',
     });
+
+    // Default mock for onboardOpenclaw
+    vi.mocked(installer.onboardOpenclaw).mockResolvedValue({
+      success: true,
+      cancelled: false,
+    });
   });
 
   afterEach(() => {
