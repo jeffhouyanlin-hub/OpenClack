@@ -207,7 +207,7 @@
         "Execute MSI with elevated privileges (UAC prompt)",
         "Wait for installation to complete and verify"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {

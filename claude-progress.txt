@@ -625,3 +625,45 @@
   - XSS/Injection: PROTECTED (comprehensive sanitization on all IPC boundaries)
 - Notes for future sessions: feat-069 establishes defense-in-depth for command execution. The secureSpawn() wrapper provides an additional security layer beyond the existing sanitization. Future features should use secureSpawn() when executing commands, though the existing installer.ts functions already follow secure patterns. The command whitelist prevents arbitrary command execution even if an attacker gains control of command arguments.
 
+### Session 21 — feat-016: Implement Node.js installation on Windows
+- Verified that installNodeWindows() function was already fully implemented in src/main/utils/installer.ts:
+  - Downloads Node.js MSI installer from nodejs.org with automatic version detection (latest v22.x)
+  - Detects architecture (x64 or x86) and downloads appropriate installer
+  - Uses downloadFile() helper function to handle HTTP downloads with redirect support
+  - Implements comprehensive SHA256 checksum verification for security:
+    - Fetches SHASUMS256.txt from nodejs.org for the specific version
+    - Parses checksum file to extract expected hash for the installer
+    - Verifies downloaded file checksum matches expected value
+    - Aborts installation if checksum verification fails
+  - Executes MSI installer with elevated privileges via executeWithPrivileges() (UAC prompt)
+  - Uses msiexec with /i (install), /qn (silent), /norestart flags
+  - Handles user cancellation gracefully (UAC denial)
+  - Verifies installation by calling detectNodeVersion() after completion
+  - Cleans up temporary installer file after installation
+  - Provides real-time progress updates via optional callback
+- Verified integration with InstallationOrchestrator already complete:
+  - executeNodeInstallPhase() calls installNodeWindows() on win32 platform
+  - Progress callback integration streams logs via orchestrator's emitLog()
+  - Proper cancellation handling sets orchestrator's cancelled flag
+  - Error handling throws descriptive errors that orchestrator catches
+- Created comprehensive test suite (src/main/utils/windows-node-install.test.ts) with 25 tests covering:
+  - Function definition and signature verification (3 tests)
+  - Platform validation (Windows only, rejects macOS/Linux) (4 tests)
+  - Progress callback functionality (3 tests)
+  - Architecture detection (x64 vs x86) (2 tests)
+  - Return type structure validation (3 tests)
+  - Error handling and graceful failures (5 tests)
+  - Integration and export verification (3 tests)
+  - Edge cases (uncaught promises, cancellation flags) (2 tests)
+- Current test status: 572/572 passing (547 previous + 25 new for Windows Node.js installation)
+- All TypeScript compilation passes for both main and renderer
+- Build process completes successfully
+- Features.json updated: feat-016 marked as passing
+- Notes for future sessions: Windows Node.js installation is fully implemented and tested. The InstallationOrchestrator now has real installation logic for Windows users. When Node.js is missing or below the minimum version on Windows, the orchestrator will:
+  1. Download the appropriate MSI installer (x64 or x86) from nodejs.org
+  2. Verify the installer's SHA256 checksum for security
+  3. Execute the installer with elevated privileges (UAC prompt)
+  4. Verify the installation completed successfully
+  5. Handle user cancellation gracefully
+  The checksum verification adds an important security layer to prevent installation of tampered packages. Future features (feat-017 for Linux) should follow this same pattern. The download and checksum helper functions are already available for reuse.
+
