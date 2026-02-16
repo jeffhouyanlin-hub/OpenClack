@@ -17,6 +17,14 @@ describe('InstallationOrchestrator', () => {
       version: '22.12.0',
       method: 'homebrew',
     });
+
+    // Default mock for installNodeWindows
+    vi.mocked(installer.installNodeWindows).mockResolvedValue({
+      success: true,
+      cancelled: false,
+      version: '22.12.0',
+      method: 'msi',
+    });
   });
 
   afterEach(() => {

@@ -587,3 +587,41 @@
   - Type validation combined with sanitization for defense in depth
 - Notes: The sanitization layer works in conjunction with existing validation - sanitization removes injection vectors while preserving data types so validation can still detect structural errors
 
+
+### Session 20 — feat-069: Prevent code injection in command execution
+- Created comprehensive secure command execution module (src/main/utils/secure-command.ts):
+  - Implements command whitelist to prevent arbitrary command execution
+  - Provides secureSpawn() wrapper that enforces spawn() with array arguments (never shell strings)
+  - Validates and sanitizes all command arguments (strings, numbers, booleans only - rejects objects/functions)
+  - Includes validatePath() function that detects and blocks path traversal and injection attempts
+  - Detects suspicious patterns (semicolons, pipes, command chaining, redirects, command substitution)
+  - Allows dynamic command whitelist management (allowCommand, disallowCommand, getAllowedCommands)
+  - Forces shell: false option to prevent shell injection regardless of caller's intent
+  - Integrates with existing sanitization.ts utilities for consistent security
+- Added comprehensive security documentation to installer.ts module header:
+  - Documents all 5 security principles (command injection, path traversal, code execution, argument safety, validation)
+  - Added inline security comments to key functions (detectNodeVersion, executeWithPrivileges)
+  - Cross-references secure-command.ts and sanitization.ts modules
+- Created extensive test suite (src/main/utils/secure-command.test.ts) with 43 tests covering:
+  - Command whitelist enforcement (6 tests)
+  - Argument sanitization (10 tests for strings, numbers, booleans, invalid types, null bytes)
+  - Path validation (10 tests for traversal, injection patterns, suspicious characters)
+  - secureSpawn integration (13 tests for spawn calls, shell option forcing, argument passing)
+  - Edge cases (4 tests for injection attempts, unicode, DoS prevention)
+- Verified existing security measures already in place:
+  - All spawn() calls use array arguments, not shell strings ✓
+  - No exec() or shell: true options anywhere in codebase ✓
+  - No eval() or dynamic code execution (Function, etc.) ✓
+  - Comprehensive sanitization via sanitization.ts (feat-068) ✓
+  - Input validation via ipc-handlers.ts ✓
+- Current test status: 547/547 passing (43 new tests for secure-command)
+- All TypeScript compilation passes for both main and renderer
+- Build process completes successfully
+- Security audit complete:
+  - Command injection: PROTECTED (spawn with arrays, whitelist, argument validation)
+  - Path traversal: PROTECTED (path sanitization, pattern detection)
+  - Code execution: PROTECTED (no eval/Function, no dynamic requires)
+  - Shell injection: PROTECTED (shell: false forced, arguments isolated)
+  - XSS/Injection: PROTECTED (comprehensive sanitization on all IPC boundaries)
+- Notes for future sessions: feat-069 establishes defense-in-depth for command execution. The secureSpawn() wrapper provides an additional security layer beyond the existing sanitization. Future features should use secureSpawn() when executing commands, though the existing installer.ts functions already follow secure patterns. The command whitelist prevents arbitrary command execution even if an attacker gains control of command arguments.
+
