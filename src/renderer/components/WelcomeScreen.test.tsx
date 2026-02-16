@@ -78,7 +78,7 @@ describe('WelcomeScreen', () => {
     const mockOnInstall = vi.fn();
     render(<WelcomeScreen onInstall={mockOnInstall} isInstalling={true} />);
 
-    const button = screen.getByRole('button', { name: /installing/i });
+    const button = screen.getByRole('button', { name: /installation in progress/i });
     expect(button).toBeInTheDocument();
     expect(button).toHaveTextContent('Installing...');
   });

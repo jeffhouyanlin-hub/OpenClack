@@ -164,6 +164,40 @@
   background: #777;
 }
 
+/* Installation Actions (Cancel Button) */
+.installation-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.cancel-button {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ef4444;
+  background: transparent;
+  border: 2px solid #ef4444;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-button:hover {
+  background: #ef4444;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.cancel-button:active {
+  transform: translateY(0);
+}
+
+.cancel-button:focus {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .installation-screen {

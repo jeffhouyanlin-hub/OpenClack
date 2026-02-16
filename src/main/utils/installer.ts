@@ -481,7 +481,7 @@ export interface NodeInstallResult {
 /**
  * Progress callback for streaming installation output
  */
-export type InstallProgressCallback = (message: string, level: 'info' | 'warning' | 'error') => void;
+export type InstallProgressCallback = (message: string, level: 'info' | 'warning' | 'error' | 'debug') => void;
 
 /**
  * Detects if Homebrew is installed on macOS

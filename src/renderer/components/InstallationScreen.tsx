@@ -11,12 +11,14 @@ export interface InstallationScreenProps {
   progress: number; // 0-100
   currentStep: string;
   logs: LogEntry[];
+  onCancel?: () => void;
 }
 
 export const InstallationScreen: React.FC<InstallationScreenProps> = ({
   progress,
   currentStep,
   logs,
+  onCancel,
 }) => {
   const logContainerRef = React.useRef<HTMLDivElement>(null);
 
@@ -36,8 +38,16 @@ export const InstallationScreen: React.FC<InstallationScreenProps> = ({
     return `log-entry log-entry--${level}`;
   };
 
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    } else if (typeof window !== 'undefined' && window.electronAPI) {
+      window.electronAPI.cancelInstall();
+    }
+  };
+
   return (
-    <div className="installation-screen">
+    <div className="installation-screen" role="main" aria-label="Installation progress">
       <div className="installation-content">
         <h1 className="installation-title">Installing OpenClaw</h1>
 
@@ -82,6 +92,16 @@ export const InstallationScreen: React.FC<InstallationScreenProps> = ({
               ))
             )}
           </div>
+        </div>
+
+        <div className="installation-actions">
+          <button
+            className="cancel-button"
+            onClick={handleCancel}
+            aria-label="Cancel installation"
+          >
+            Cancel Installation
+          </button>
         </div>
       </div>
     </div>

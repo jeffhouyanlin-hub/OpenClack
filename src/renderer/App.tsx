@@ -86,6 +86,20 @@ function App() {
     }, 2000);
   };
 
+  // feat-065: Installation cancellation
+  const cancelInstall = () => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      window.electronAPI.cancelInstall();
+    }
+    setState((prev) => ({
+      ...prev,
+      currentScreen: AppScreen.WELCOME,
+      installProgress: 0,
+      currentStep: '',
+      logs: [],
+    }));
+  };
+
   const handleRetry = () => {
     // Reset error and restart installation
     setState((prev) => ({
@@ -140,6 +154,7 @@ function App() {
             progress={state.installProgress}
             currentStep={state.currentStep}
             logs={state.logs}
+            onCancel={cancelInstall}
           />
         );
 

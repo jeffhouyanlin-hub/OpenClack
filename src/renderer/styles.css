@@ -1,3 +1,137 @@
+/* ===========================================
+   OpenClack Design System - CSS Variables & Base
+   feat-013: Responsive layout and styling system
+   feat-059: Screen transitions
+   feat-087-088: Dark mode support
+   =========================================== */
+
+/* Theme CSS Variables */
+:root {
+  /* Color palette */
+  --color-primary: #667eea;
+  --color-primary-dark: #5a6fd6;
+  --color-primary-light: #8b9df0;
+  --color-secondary: #764ba2;
+  --color-accent: #f093fb;
+
+  /* Gradient */
+  --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+
+  /* Background colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #f7fafc;
+  --bg-dark: #1a1a1a;
+  --bg-overlay: rgba(0, 0, 0, 0.3);
+
+  /* Text colors */
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-muted: #999999;
+  --text-light: #ffffff;
+  --text-light-secondary: rgba(255, 255, 255, 0.9);
+  --text-light-muted: rgba(255, 255, 255, 0.8);
+
+  /* Status colors */
+  --color-success: #48bb78;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #4299e1;
+
+  /* Border colors */
+  --border-light: #e0e0e0;
+  --border-default: #ddd;
+  --border-focus: var(--color-primary);
+
+  /* Spacing scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  /* Font sizes */
+  --font-xs: 0.75rem;
+  --font-sm: 0.875rem;
+  --font-md: 1rem;
+  --font-lg: 1.125rem;
+  --font-xl: 1.25rem;
+  --font-2xl: 1.5rem;
+  --font-3xl: 2rem;
+  --font-4xl: 3rem;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-round: 50%;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  --transition-screen: 0.35s ease-in-out;
+
+  /* Responsive breakpoints (documented for reference, used in media queries) */
+  /* --breakpoint-sm: 480px; */
+  /* --breakpoint-md: 640px; */
+  /* --breakpoint-lg: 768px; */
+  /* --breakpoint-xl: 1024px; */
+
+  /* Z-index scale */
+  --z-base: 0;
+  --z-above: 10;
+  --z-tooltip: 100;
+  --z-modal: 1000;
+  --z-overlay: 2000;
+}
+
+/* Dark mode theme */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #16213e;
+    --bg-tertiary: #0f3460;
+    --bg-dark: #0a0a0a;
+
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --text-muted: #808080;
+
+    --border-light: #333;
+    --border-default: #444;
+
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* Manual dark mode class override */
+.dark-mode {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-tertiary: #0f3460;
+  --bg-dark: #0a0a0a;
+
+  --text-primary: #e0e0e0;
+  --text-secondary: #b0b0b0;
+  --text-muted: #808080;
+
+  --border-light: #333;
+  --border-default: #444;
+}
+
+/* Base reset */
 * {
   margin: 0;
   padding: 0;
@@ -23,4 +157,70 @@ body {
   height: 100%;
   display: flex;
   color: white;
+}
+
+/* feat-059: Screen transition animations */
+.screen-enter {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.screen-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity var(--transition-screen), transform var(--transition-screen);
+}
+
+.screen-exit {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.screen-exit-active {
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity var(--transition-screen), transform var(--transition-screen);
+}
+
+/* Fade transitions */
+.fade-enter {
+  opacity: 0;
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity var(--transition-screen);
+}
+
+.fade-exit {
+  opacity: 1;
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity var(--transition-screen);
+}
+
+/* Responsive breakpoints */
+@media (max-width: 480px) {
+  :root {
+    --font-4xl: 2rem;
+    --font-3xl: 1.5rem;
+    --font-2xl: 1.25rem;
+    --space-xl: 1.5rem;
+    --space-2xl: 2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --font-4xl: 2.5rem;
+    --font-3xl: 1.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --space-2xl: 2.5rem;
+  }
 }
