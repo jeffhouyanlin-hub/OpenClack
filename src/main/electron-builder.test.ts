@@ -166,7 +166,6 @@ describe('electron-builder configuration', () => {
     it('should have installer icons configured', () => {
       expect(nsisConfig.installerIcon).toBe('assets/icons/icon.ico');
       expect(nsisConfig.uninstallerIcon).toBe('assets/icons/icon.ico');
-      expect(nsisConfig.installerHeaderIcon).toBe('assets/icons/icon.ico');
     });
   });
 

@@ -151,7 +151,6 @@ describe('feat-006: Asset Pipeline for Icons and Branding', () => {
       expect(packageJson.build.nsis).toBeDefined();
       expect(packageJson.build.nsis.installerIcon).toBe('assets/icons/icon.ico');
       expect(packageJson.build.nsis.uninstallerIcon).toBe('assets/icons/icon.ico');
-      expect(packageJson.build.nsis.installerHeaderIcon).toBe('assets/icons/icon.ico');
     });
 
     it('should have icon paths pointing to assets/icons directory', () => {

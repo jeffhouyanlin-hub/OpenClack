@@ -151,8 +151,7 @@
       "createStartMenuShortcut": true,
       "shortcutName": "OpenClack",
       "installerIcon": "assets/icons/icon.ico",
-      "uninstallerIcon": "assets/icons/icon.ico",
-      "installerHeaderIcon": "assets/icons/icon.ico"
+      "uninstallerIcon": "assets/icons/icon.ico"
     },
     "msi": {
       "oneClick": false,
