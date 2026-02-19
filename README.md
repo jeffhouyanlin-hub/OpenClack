@@ -2,7 +2,7 @@
 
 **Ditch the command line. One Clack to OpenClaw.** **从此告别命令行，一键开启 OpenClaw。**
 
-*Created with ❤️ by Dr. Jeff Marquis and the OpenClack Community.*
+*Created with ❤️ by Dr. Jeff Marquis Hou and the OpenClack Community.*
 ---
 
 ## 🏛️ Philosophy | 产品哲学
